@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from typing import Optional
+from credentials import CredentialsInfo
+from utils import clean_gapic_fqn
 
 @dataclass
 class GapicCall:
@@ -7,10 +10,10 @@ class GapicCall:
     line: int
     source_line: str
     resolution: str
+    client_fullname: Optional[str] = None
+    credentials: Optional[CredentialsInfo] = None
 
-def clean_gapic_fullname(name: str) -> str:
-    """Removes internal package structures like .services.[...].client."""
-    import re
-    name = re.sub(r'\.services\.[a-zA-Z0-9_]+\.client\.', '.', name)
-    name = re.sub(r'\.client\.Client', '.Client', name)
-    return name
+IMPORTS = ["google.cloud", "google.genai", "vertexai", "google.adk"]
+
+def isRelevantImport(import_name: Optional[str]) -> bool:
+    return bool(import_name and any(imp in import_name for imp in IMPORTS))

@@ -48,5 +48,5 @@ The output lists detected API calls grouped by file, along with their line numbe
 - **Unresolved Types (`Any` or `[fallback]`)**:
   If Jedi cannot find type definitions for external client libraries, provide the path to the target project's virtual environment as the third parameter:
   ```bash
-  /Users/petrusca/Google/policy-lens/.venv/bin/python3 scripts/analyzer.py /path/to/project jedi /path/to/project/.venv/bin/python
+  /Users/petrusca/Google/policy-lens/.venv/bin/python3 scripts/analyzer.py /path/to/project /path/to/project/.venv/bin/python
   ```
