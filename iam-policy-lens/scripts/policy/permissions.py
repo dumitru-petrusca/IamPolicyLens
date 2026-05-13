@@ -60,6 +60,26 @@ _METHOD_TO_PERMISSIONS = {
     # Go Cloud Run
     "cloud.google.com/go/run/apiv2.ServicesClient.ListServices": ["run.services.list"],
     "cloud.google.com/go/run/apiv2.ServicesClient.GetService": ["run.services.get"],
+
+    # TypeScript / Node.js Compute Engine
+    "@google-cloud/compute.InstancesClient.aggregatedListAsync": ["compute.instances.list"],
+    "@google-cloud/compute.InstancesClient.listAsync": ["compute.instances.list"],
+
+    # TypeScript / Node.js GKE (Kubernetes Engine)
+    "@google-cloud/container.ClusterManagerClient.listClusters": ["container.clusters.list"],
+    "@google-cloud/container.ClusterManagerClient.getCluster": ["container.clusters.get"],
+
+    # TypeScript / Node.js Cloud Asset Inventory
+    "@google-cloud/asset.AssetServiceClient.listAssets": ["cloudasset.assets.searchAllResources"],
+
+    # TypeScript / Node.js BigQuery
+    "@google-cloud/bigquery.BigQuery.query": ["bigquery.jobs.create"],
+    "@google-cloud/bigquery.Dataset.getTables": ["bigquery.tables.list"],
+    "@google-cloud/bigquery.BigQuery.dataset": ["bigquery.datasets.get"],
+
+    # TypeScript / Node.js Cloud Run
+    "@google-cloud/run.ServicesClient.listServices": ["run.services.list"],
+    "@google-cloud/run.ServicesClient.getService": ["run.services.get"],
 }
 
 def gapic2permission(gapic_method: str) -> Optional[List[str]]:

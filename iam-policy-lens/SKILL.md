@@ -1,17 +1,17 @@
 ---
 name: iam-policy-lens
-description: Polyglot Cloud Access Scanner (Python & Go) to statically identify Google Cloud (GAPIC) client library invocations, map them to required IAM permissions, and generate consolidated GCP IAM V3 Allow Policies.
+description: Polyglot Cloud Access Scanner (Python, Go, & TypeScript) to statically identify Google Cloud (GAPIC) client library invocations, map them to required IAM permissions, and generate consolidated GCP IAM V3 Allow Policies.
 ---
 
 # IAM Policy Lens Instructions
 
-Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) usage in Python or Go projects to determine the exact IAM permissions, roles, or policies required by the codebase.
+Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) usage in Python, Go, or TypeScript projects to determine the exact IAM permissions, roles, or policies required by the codebase.
 
 ---
 
 ## When to Use
 
-- **GCP Code Audit**: Discover exactly what GCP services and methods a Python or Go application invokes.
+- **GCP Code Audit**: Discover exactly what GCP services and methods a Python, Go, or TypeScript application invokes.
 - **IAM Permission Mapping**: Map high-level code invocations (e.g., `storage.buckets.create`) to granular IAM permissions before deploying or configuring Service Accounts.
 - **Automated Policy Generation**: Generate least-privilege, consolidated GCP IAM V3 Allow Policies tailored to the application's credential provenance (Service Accounts, Users, Impersonation).
 - **Security & Access Reviews**: Identify the exact security footprint and credential mechanisms used across the codebase.
@@ -21,7 +21,7 @@ Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) 
 ## Architecture & Workflow
 
 The skill is split into a two-stage pipeline:
-1. **Analyzers (`scripts/python/analyzer.py`, `scripts/go/analyzer.go`)**: Parse the target project AST/types, resolve fully qualified method names, extract credential provenance, and output structured JSON conforming to `schema.json`.
+1. **Analyzers (`scripts/python/analyzer.py`, `scripts/go/analyzer.go`, `scripts/ts/analyzer.ts`)**: Parse the target project AST/types, resolve fully qualified method names, extract credential provenance, and output structured JSON conforming to `schema.json`.
 2. **Policy Generator (`scripts/policy/policy.py`)**: Ingests the JSON call array from the analyzers (via `stdin`), maps methods to IAM permissions using `permissions.py`, resolves attachment points/principals, and outputs consolidated IAM V3 Allow Policies.
 
 ---
@@ -39,6 +39,11 @@ Chain the analyzer and policy generator together using standard Unix streams (`s
 #### For Go Projects:
 ```bash
 go run scripts/go/analyzer.go <path_to_target_project> | ./.venv/bin/python3 scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
+```
+
+#### For TypeScript / Node.js Projects:
+```bash
+node scripts/ts/dist/analyzer.js <path_to_target_project> | ./.venv/bin/python3 scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
 ```
 
 ### 2. Two-Step Execution (For Auditing & CI/CD)

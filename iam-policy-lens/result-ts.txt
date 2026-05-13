@@ -1,0 +1,146 @@
+[
+  {
+    "fullname": "@google/adk.InMemoryRunner.runEphemeral",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/main.ts",
+    "line": 32,
+    "source_line": "runner.runEphemeral({",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "{ agent }",
+      "provenance": "SA_DEFAULT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google/genai.createUserContent",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/main.ts",
+    "line": 34,
+    "source_line": "createUserContent(trimmed)",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google/adk.isFinalResponse",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/main.ts",
+    "line": 39,
+    "source_line": "isFinalResponse(event)",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google/adk.stringifyContent",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/main.ts",
+    "line": 40,
+    "source_line": "stringifyContent(event)",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/asset.AssetServiceClient.listAssets",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/assets.ts",
+    "line": 14,
+    "source_line": "client.listAssets({",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/bigquery.BigQuery.dataset",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/billing.ts",
+    "line": 13,
+    "source_line": "client.dataset(\"billing_export\")",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "client",
+      "provenance": "SA_DEFAULT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/bigquery.Dataset.getTables",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/billing.ts",
+    "line": 14,
+    "source_line": "dataset.getTables()",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "\"billing_export\"",
+      "provenance": "SA_DEFAULT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/common.id.startsWith",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/billing.ts",
+    "line": 16,
+    "source_line": "table.id.startsWith(\"gcp_billing_export\")",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "table.id",
+      "provenance": "SA_DEFAULT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/bigquery.BigQuery.query",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/billing.ts",
+    "line": 60,
+    "source_line": "client.query({",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "{ projectId: args.project_id }",
+      "provenance": "SA_DEFAULT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/compute.InstancesClient.aggregatedListAsync",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/compute.ts",
+    "line": 12,
+    "source_line": "client.aggregatedListAsync({",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/container.ClusterManagerClient.listClusters",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/containers.ts",
+    "line": 13,
+    "source_line": "client.listClusters({ parent })",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "@google-cloud/run.ServicesClient.listServices",
+    "file_path": "/Users/petrusca/Google/skills/gcp_cost_optimizer_agent/ts/tools/containers.ts",
+    "line": 57,
+    "source_line": "client.listServices({ parent })",
+    "resolution": "typechecker",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  }
+]
