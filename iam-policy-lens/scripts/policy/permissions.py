@@ -39,6 +39,27 @@ _METHOD_TO_PERMISSIONS = {
     ],
     "vertexai.agent_engines.get": ["aiplatform.reasoningEngines.get"],
     "vertexai.agent_engines.delete": ["aiplatform.reasoningEngines.delete"],
+
+    # Go Compute Engine
+    "cloud.google.com/go/compute/apiv1.InstancesClient.AggregatedList": ["compute.instances.list"],
+    "cloud.google.com/go/compute/apiv1.InstancesClient.List": ["compute.instances.list"],
+
+    # Go GKE (Kubernetes Engine)
+    "cloud.google.com/go/container/apiv1.ClusterManagerClient.ListClusters": ["container.clusters.list"],
+    "cloud.google.com/go/container/apiv1.ClusterManagerClient.GetCluster": ["container.clusters.get"],
+
+    # Go Cloud Asset Inventory
+    "cloud.google.com/go/asset/apiv1.Client.ListAssets": ["cloudasset.assets.searchAllResources"],
+
+    # Go BigQuery
+    "cloud.google.com/go/bigquery.Client.Query": ["bigquery.jobs.create"],
+    "cloud.google.com/go/bigquery.Dataset.Tables": ["bigquery.tables.list"],
+    "cloud.google.com/go/bigquery.Client.DatasetInProject": ["bigquery.datasets.get"],
+    "cloud.google.com/go/bigquery.Client.Dataset": ["bigquery.datasets.get"],
+
+    # Go Cloud Run
+    "cloud.google.com/go/run/apiv2.ServicesClient.ListServices": ["run.services.list"],
+    "cloud.google.com/go/run/apiv2.ServicesClient.GetService": ["run.services.get"],
 }
 
 def gapic2permission(gapic_method: str) -> Optional[List[str]]:

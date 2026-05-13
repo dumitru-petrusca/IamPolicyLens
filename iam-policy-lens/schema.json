@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GapicCallList",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "fullname": {
+        "type": "string",
+        "description": "The fully qualified name of the GAPIC/Google API method called."
+      },
+      "file_path": {
+        "type": "string",
+        "description": "The absolute path to the source code file containing the call."
+      },
+      "line": {
+        "type": "integer",
+        "description": "The line number (1-indexed) where the call was detected."
+      },
+      "source_line": {
+        "type": "string",
+        "description": "The exact raw code snippet matching the call."
+      },
+      "credentials": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "The parsed inline expression or variable source defining the credentials."
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "SA_DEFAULT",
+              "SA_EXPLICIT",
+              "OAUTH_USER",
+              "OAUTH_FLOW",
+              "DWD",
+              "IMPERSONATION",
+              "IMPLICIT",
+              "UNKNOWN"
+            ],
+            "description": "Security provenance classification of the credentials."
+          },
+          "identity": {
+            "type": "string",
+            "enum": [
+              "APP",
+              "USER",
+              "IMPERSONATED",
+              "UNKNOWN"
+            ],
+            "description": "Simplified identity type for security audits."
+          }
+        },
+        "required": [
+          "source",
+          "provenance",
+          "identity"
+        ]
+      }
+    },
+    "required": [
+      "fullname",
+      "file_path",
+      "line",
+      "source_line",
+      "resolution"
+    ]
+  }
+}

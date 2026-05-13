@@ -18,7 +18,7 @@ How to Run:
 Run the script passing the target repository source path as the first argument:
     .venv/bin/python3 scripts/python/analyzer.py <path_to_project>
     .venv/bin/python3  scripts/python/analyzer.py /Users/petrusca/Google/adk-samples/python/agents/data-science
-    .venv/bin/python3 scripts/python/analyzer.py /Users/petrusca/Google/gcp_python_iam_analyzer/gcp_cost_optimizer_agent
+    .venv/bin/python3 scripts/python/analyzer.py ./../gcp_cost_optimizer_agent/python
 """
 import os
 import sys
@@ -65,25 +65,6 @@ if __name__ == "__main__":
                     print(f"     Credentials: {call.credentials.source}")
                     print(f"     Provenance: {call.credentials.provenance}")
                     print(f"     Identity: {call.credentials.identity}")
-                    
-                from permissions import gapic2permission
-                permissions = gapic2permission(call.fullname)
-                if permissions:
-                    print(f"     Permissions: {permissions}")
-                    
-        # Generate and print GCP IAM V3 Allow Policies
-        from policy import generate_iam_policies
-        import json
-        
-        print("\n====================================================")
-        print("🔒 Generated GCP IAM V3 Allow Policies")
-        print("====================================================")
-        
-        sa_email = os.getenv("GCP_SERVICE_ACCOUNT")
-        policies = generate_iam_policies(raw_calls, sa_email)
-        for p in policies:
-            print(f"\n📍 Attachment Point: {p['attachment_point']}")
-            print(json.dumps(p['policy'], indent=4))
     else:
         print("No relevant GAPIC calls found.")
         
