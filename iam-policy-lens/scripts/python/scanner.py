@@ -23,7 +23,7 @@ def find_gapic_calls(sources_path: str, python_env: str = None) -> List[GapicCal
             print(f"Error creating Jedi environment for {python_env}: {e}")
             print("Falling back to default environment.")
             
-    project = jedi.Project(sources_path)   
+    project = jedi.Project(sources_path)
     
     all_calls = []
     for root, dirs, files in os.walk(sources_path):

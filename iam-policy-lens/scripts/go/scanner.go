@@ -10,13 +10,11 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-
-
-type FileCache struct {
+type fileCache struct {
 	cache map[string][]string
 }
 
-func (c *FileCache) GetLine(path string, lineNum int) string {
+func (c *fileCache) getLine(path string, lineNum int) string {
 	if c.cache == nil {
 		c.cache = make(map[string][]string)
 	}
@@ -35,71 +33,70 @@ func (c *FileCache) GetLine(path string, lineNum int) string {
 	return ""
 }
 
-func ScanProject(projectPath string) ([]GapicCall, error) {
+func ScanProject(projectPath string) (<-chan GapicCall, error) {
 	// Set up packages config
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles |
 			packages.NeedImports | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedSyntax,
 		Dir: projectPath,
 	}
-
 	pkgs, err := packages.Load(cfg, "./...")
 	if err != nil {
 		return nil, err
 	}
+	cache := &fileCache{}
+	callsChan := make(chan GapicCall)
 
-	var calls []GapicCall
-	cache := &FileCache{}
-
-	for _, pkg := range pkgs {
-		if len(pkg.Errors) > 0 {
-			// Continue scanning despite package compilation errors in target project
-			for _, err := range pkg.Errors {
-				fmt.Printf("Package load warning: %v\n", err)
+	go func() {
+		for _, pkg := range pkgs {
+			if len(pkg.Errors) > 0 {
+				// Continue scanning despite package compilation errors in target project
+				for _, err := range pkg.Errors {
+					fmt.Printf("Package load warning: %v\n", err)
+				}
+			}
+			for _, fileNode := range pkg.Syntax {
+				ast.Inspect(fileNode, inspectNode(fileNode, pkg, cache, callsChan))
 			}
 		}
+		close(callsChan)
+	}()
 
-		fset := pkg.Fset
-		for _, fileSyntax := range pkg.Syntax {
-			ast.Inspect(fileSyntax, func(n ast.Node) bool {
-				callExpr, ok := n.(*ast.CallExpr)
-				if !ok {
-					return true
-				}
-
-				resolvedName, isGCP := resolveCall(callExpr, pkg.TypesInfo)
-				if isGCP {
-					pos := fset.Position(callExpr.Pos())
-					sourceLine := cache.GetLine(pos.Filename, pos.Line)
-
-					var credsInfo *CredentialsInfo
-					if isConstructorCall(resolvedName) {
-						credsInfo = extractCredentialsFromCall(callExpr, fileSyntax, pkg.TypesInfo)
-					} else {
-						recvIdent := getReceiverIdent(callExpr)
-						if recvIdent != nil {
-							credsInfo = traceCredentials(recvIdent, fileSyntax, pkg.TypesInfo)
-						}
-					}
-
-					calls = append(calls, GapicCall{
-						FullName:    resolvedName,
-						FilePath:    pos.Filename,
-						Line:        pos.Line,
-						Source:      sourceLine,
-						Resolution:  "typechecker",
-						Credentials: credsInfo,
-					})
-				}
-				return true
-			})
-		}
-	}
-
-	return calls, nil
+	return callsChan, nil
 }
 
+func inspectNode(fileNode *ast.File, pkg *packages.Package, cache *fileCache, calls chan<- GapicCall) func(ast.Node) bool {
+	return func(n ast.Node) bool {
+		callExpr, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
 
+		resolvedName, isGCP := resolveCall(callExpr, pkg.TypesInfo)
+		if isGCP {
+			pos := pkg.Fset.Position(callExpr.Pos())
+			var credsInfo *CredentialsInfo
+			if isConstructorCall(resolvedName) {
+				credsInfo = extractCredentialsFromCall(callExpr, fileNode, pkg.TypesInfo)
+			} else {
+				recvIdent := getReceiverIdent(callExpr)
+				if recvIdent != nil {
+					credsInfo = traceCredentials(recvIdent, fileNode, pkg.TypesInfo)
+				}
+			}
+
+			calls <- GapicCall{
+				FullName:    resolvedName,
+				FilePath:    pos.Filename,
+				Line:        pos.Line,
+				Source:      cache.getLine(pos.Filename, pos.Line),
+				Resolution:  "typechecker",
+				Credentials: credsInfo,
+			}
+		}
+		return true
+	}
+}
 
 func isConstructorCall(resolvedName string) bool {
 	return strings.Contains(resolvedName, ".New") || strings.Contains(resolvedName, "NewClient")

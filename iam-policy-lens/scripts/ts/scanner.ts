@@ -4,38 +4,6 @@ import * as path from "path";
 import { GapicCall, isRelevantPackage } from "./gapic.js";
 import { traceCredentials, CredentialsInfo, CredentialProvenance, IdentityContext } from "./credentials.js";
 
-function walkDir(dir: string, callback: (filePath: string) => void) {
-  const files = fs.readdirSync(dir);
-  for (const file of files) {
-    if (file === "node_modules" || file === "dist" || file === ".git" || file === "build") {
-      continue;
-    }
-    const fullPath = path.join(dir, file);
-    const stat = fs.statSync(fullPath);
-    if (stat.isDirectory()) {
-      walkDir(fullPath, callback);
-    } else if (file.endsWith(".ts") || file.endsWith(".js")) {
-      callback(fullPath);
-    }
-  }
-}
-
-function findTsConfig(baseDir: string): string | undefined {
-  let current = baseDir;
-  while (true) {
-    const p = path.join(current, "tsconfig.json");
-    if (fs.existsSync(p)) {
-      return p;
-    }
-    const next = path.dirname(current);
-    if (next === current) {
-      break;
-    }
-    current = next;
-  }
-  return undefined;
-}
-
 export function scanProject(projectPath: string): GapicCall[] {
   const tsConfigPath = findTsConfig(projectPath);
   let rootFiles: string[] = [];
@@ -166,4 +134,36 @@ export function scanProject(projectPath: string): GapicCall[] {
   }
 
   return calls;
+}
+
+function walkDir(dir: string, callback: (filePath: string) => void) {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    if (file === "node_modules" || file === "dist" || file === ".git" || file === "build") {
+      continue;
+    }
+    const fullPath = path.join(dir, file);
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      walkDir(fullPath, callback);
+    } else if (file.endsWith(".ts") || file.endsWith(".js")) {
+      callback(fullPath);
+    }
+  }
+}
+
+function findTsConfig(baseDir: string): string | undefined {
+  let current = baseDir;
+  while (true) {
+    const p = path.join(current, "tsconfig.json");
+    if (fs.existsSync(p)) {
+      return p;
+    }
+    const next = path.dirname(current);
+    if (next === current) {
+      break;
+    }
+    current = next;
+  }
+  return undefined;
 }

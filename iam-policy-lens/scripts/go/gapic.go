@@ -4,6 +4,13 @@ import (
 	"strings"
 )
 
+var imports = []string{
+	"cloud.google.com/go",
+	"google.golang.org/api",
+	"google.golang.org/genai",
+	"google.golang.org/adk",
+}
+
 type GapicCall struct {
 	FullName    string           `json:"fullname"`
 	FilePath    string           `json:"file_path"`
@@ -11,13 +18,6 @@ type GapicCall struct {
 	Source      string           `json:"source_line"`
 	Resolution  string           `json:"resolution"`
 	Credentials *CredentialsInfo `json:"credentials,omitempty"`
-}
-
-var imports = []string{
-	"cloud.google.com/go",
-	"google.golang.org/api",
-	"google.golang.org/genai",
-	"google.golang.org/adk",
 }
 
 func isRelevantPackage(pkgPath string) bool {

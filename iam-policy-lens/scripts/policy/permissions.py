@@ -1,6 +1,8 @@
 from typing import List, Optional
 
 # Static mapping of resolved GAPIC methods to required IAM permissions
+# This mapping is a hack and will be replced with actual pre-computed mappings.
+
 _METHOD_TO_PERMISSIONS = {
     # Compute Engine
     "google.cloud.compute_v1.InstancesClient.aggregated_list": ["compute.instances.list"],
@@ -15,7 +17,10 @@ _METHOD_TO_PERMISSIONS = {
     
     # BigQuery
     "google.cloud.bigquery.Client.query": ["bigquery.jobs.create"],
-    "google.cloud.bigquery.Client.list_tables": ["bigquery.tables.list"],
+    "google.cloud.bigquery.Client.list_tables": [
+        "bigquery.datasets.get",
+        "bigquery.tables.list"
+    ],
     "google.cloud.bigquery.Client.get_dataset": ["bigquery.datasets.get"],
     "google.cloud.bigquery.Client.create_dataset": ["bigquery.datasets.create"],
     "google.cloud.bigquery.Client.load_table_from_file": [
@@ -30,6 +35,10 @@ _METHOD_TO_PERMISSIONS = {
     "google.cloud.storage.Client.lookup_bucket": ["storage.buckets.get"],
     "google.cloud.storage.Client.create_bucket": ["storage.buckets.create"],
     "google.cloud.storage.bucket.Bucket.patch": ["storage.buckets.update"],
+    
+    # Python Cloud Run
+    "google.cloud.run_v2.ServicesClient.list_services": ["run.services.list"],
+    "google.cloud.run_v2.ServicesClient.get_service": ["run.services.get"],
     
     # Vertex AI / reasoning engine
     "vertexai.agent_engines.create": [

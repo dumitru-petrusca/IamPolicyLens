@@ -32,19 +32,6 @@ const (
 	ID_UNKNOWN   IdentityContext = "UNKNOWN"
 )
 
-func toIdentityContext(prov CredentialProvenance) IdentityContext {
-	switch prov {
-	case SA_DEFAULT, SA_EXPLICIT, IMPLICIT:
-		return APP
-	case OAUTH_USER, OAUTH_FLOW:
-		return USER
-	case DWD, IMPERSONATION:
-		return IMPERSONATED
-	default:
-		return ID_UNKNOWN
-	}
-}
-
 type CredentialsInfo struct {
 	Source     string               `json:"source"`
 	Provenance CredentialProvenance `json:"provenance"`
@@ -152,32 +139,42 @@ func resolveOptionCall(call *ast.CallExpr, info *types.Info) (string, bool) {
 
 func classifyProvenance(sourceCode string, fqn string) CredentialProvenance {
 	if fqn != "" {
-		if strings.Contains(fqn, "WithCredentialsFile") {
-			return SA_EXPLICIT
-		}
-		if strings.Contains(fqn, "WithCredentialsJSON") {
-			return SA_EXPLICIT
-		}
-		if strings.Contains(fqn, "WithAPIKey") {
-			return SA_EXPLICIT
-		}
-		if strings.Contains(fqn, "WithTokenSource") {
-			return IMPERSONATION
+		if prov := matchCredentialOption(fqn); prov != UNKNOWN {
+			return prov
 		}
 	}
+	prov := matchCredentialOption(sourceCode)
+	if prov == UNKNOWN {
+		return SA_DEFAULT
+	}
+	return prov
+}
 
-	if strings.Contains(sourceCode, "WithCredentialsFile") {
+func matchCredentialOption(s string) CredentialProvenance {
+	if strings.Contains(s, "WithCredentialsFile") {
 		return SA_EXPLICIT
 	}
-	if strings.Contains(sourceCode, "WithCredentialsJSON") {
+	if strings.Contains(s, "WithCredentialsJSON") {
 		return SA_EXPLICIT
 	}
-	if strings.Contains(sourceCode, "WithAPIKey") {
+	if strings.Contains(s, "WithAPIKey") {
 		return SA_EXPLICIT
 	}
-	if strings.Contains(sourceCode, "WithTokenSource") {
+	if strings.Contains(s, "WithTokenSource") {
 		return IMPERSONATION
 	}
+	return UNKNOWN
+}
 
-	return SA_DEFAULT
+func toIdentityContext(prov CredentialProvenance) IdentityContext {
+	switch prov {
+	case SA_DEFAULT, SA_EXPLICIT, IMPLICIT:
+		return APP
+	case OAUTH_USER, OAUTH_FLOW:
+		return USER
+	case DWD, IMPERSONATION:
+		return IMPERSONATED
+	default:
+		return ID_UNKNOWN
+	}
 }

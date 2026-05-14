@@ -23,21 +23,23 @@ Run the script passing the target repository source path as the first argument:
 import os
 import sys
 import time
+import json
+from dataclasses import asdict
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage:")
-        print("  python scripts/python/analyzer.py <path_to_project> [python_env_path]")
+        print("Usage:", file=sys.stderr)
+        print("  python scripts/python/analyzer.py <path_to_project> [python_env_path]", file=sys.stderr)
         sys.exit(1)
         
     project_path = sys.argv[1]
     python_env = sys.argv[2] if len(sys.argv) >= 3 else None
     
-    print(f"Scanning: {project_path} for GAPIC calls")
+    print(f"Scanning: {project_path} for GAPIC calls", file=sys.stderr)
     if python_env:
-        print(f"Using Python environment: {python_env}")
+        print(f"Using Python environment: {python_env}", file=sys.stderr)
         
     start_time = time.time()
     import scanner
@@ -45,28 +47,22 @@ if __name__ == "__main__":
     elapsed_time = time.time() - start_time
     
     if raw_calls:
-        from collections import defaultdict
-        grouped_calls = defaultdict(list)
-        for call in raw_calls:
-            full_path = os.path.abspath(call.file_path)
-            grouped_calls[full_path].append(call)
+        sorted_calls = sorted(raw_calls, key=lambda x: (x.file_path, x.line))
+        call_list = []
+        for call in sorted_calls:
+            d = asdict(call)
+            cleaned_d = {k: v for k, v in d.items() if v is not None}
+            if 'credentials' in cleaned_d and cleaned_d['credentials'] is not None:
+                cred = cleaned_d['credentials']
+                if hasattr(cred['provenance'], 'value'):
+                    cred['provenance'] = cred['provenance'].value
+                if cred.get('identity') and hasattr(cred['identity'], 'value'):
+                    cred['identity'] = cred['identity'].value
+            call_list.append(cleaned_d)
             
-        for full_path, calls in sorted(grouped_calls.items()):
-            print(f"\n📄 File: {full_path}")
-            rel_path = os.path.relpath(full_path, project_path) if os.path.isabs(full_path) else full_path
-            for i, call in enumerate(sorted(calls, key=lambda x: x.line)):
-                if i > 0:
-                    print()
-                print(f"     {rel_path}:{call.line}: `{call.source_line}`")
-                print(f"     Method: {call.fullname} [{call.resolution}]")
-                if getattr(call, 'client_fullname', None):
-                    print(f"     Client: {call.client_fullname}")
-                if getattr(call, 'credentials', None):
-                    print(f"     Credentials: {call.credentials.source}")
-                    print(f"     Provenance: {call.credentials.provenance}")
-                    print(f"     Identity: {call.credentials.identity}")
+        print(json.dumps(call_list, indent=2))
     else:
-        print("No relevant GAPIC calls found.")
+        print("[]")
         
-    print(f"\nScan completed in {elapsed_time:.2f} seconds.")
-    print("====================================================")
+    print(f"\nScan completed in {elapsed_time:.2f} seconds.", file=sys.stderr)
+    print("====================================================", file=sys.stderr)
