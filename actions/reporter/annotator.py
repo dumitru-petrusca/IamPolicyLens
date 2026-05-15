@@ -7,6 +7,7 @@ GitHub Actions inline workflow annotations and job summaries for pull requests.
 import os
 import sys
 import json
+import subprocess
 
 
 def generate_annotations(json_path: str):
@@ -26,6 +27,21 @@ def generate_annotations(json_path: str):
     if not isinstance(data, list):
         print("Invalid JSON format: Expected a list of GAPIC calls.", file=sys.stderr)
         sys.exit(1)
+
+    changed_files = set()
+    try:
+        res = subprocess.run(["git", "diff", "--name-only", "HEAD~1"], capture_output=True, text=True, cwd=workspace)
+        if res.returncode == 0:
+            changed_files = {f.strip() for f in res.stdout.splitlines() if f.strip()}
+    except Exception as e:
+        print(f"Warning: Could not determine changed files: {e}", file=sys.stderr)
+
+    def get_priority(call_obj):
+        abs_path = call_obj.get("file_path", "")
+        rel_p = os.path.relpath(abs_path, workspace) if abs_path else ""
+        return 0 if rel_p in changed_files else 1
+
+    data.sort(key=get_priority)
 
     summary_lines = [
         "### 🔍 IAM Policy Lens - Scan Results",
