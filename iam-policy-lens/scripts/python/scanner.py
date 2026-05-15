@@ -1,5 +1,6 @@
 import ast
 import os
+import sys
 import jedi
 from gapic import GapicCall, clean_gapic_fqn, isRelevantImport
 from typing import List, Optional, Tuple
@@ -18,10 +19,10 @@ def find_gapic_calls(sources_path: str, python_env: str = None) -> List[GapicCal
     if python_env:
         try:
             env = jedi.create_environment(python_env)
-            print(f"Using Jedi environment: {python_env}")
+            print(f"Using Jedi environment: {python_env}", file=sys.stderr)
         except Exception as e:
-            print(f"Error creating Jedi environment for {python_env}: {e}")
-            print("Falling back to default environment.")
+            print(f"Error creating Jedi environment for {python_env}: {e}", file=sys.stderr)
+            print("Falling back to default environment.", file=sys.stderr)
             
     project = jedi.Project(sources_path)
     
@@ -50,7 +51,7 @@ def scan_file(file_path: str, project: jedi.Project, sources_path: str, env) -> 
                 if call:
                     calls.append(call)
     except Exception as e:
-        print(f"Error scanning {file_path}: {e}")
+        print(f"Error scanning {file_path}: {e}", file=sys.stderr)
     return calls
 
 
