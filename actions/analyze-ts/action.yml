@@ -1,0 +1,42 @@
+name: 'IAM Policy Lens - TypeScript Scanner'
+description: 'Scans a TypeScript project for Google Cloud API invocations and outputs discovered GAPIC calls.'
+inputs:
+  target-path:
+    description: 'Path to the TypeScript project to scan'
+    required: false
+    default: '.'
+  output-file:
+    description: 'Path to save the raw GAPIC calls JSON'
+    required: false
+    default: 'gapic-calls.json'
+outputs:
+  results-file:
+    description: 'Path to the raw GAPIC calls JSON file'
+    value: ${{ inputs.output-file }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js for Scanner
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Setup Python for Reporter
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Build TypeScript Scanner
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}/../../iam-policy-lens/scripts/ts
+        npm ci
+        npm run build
+    - name: Run TypeScript Scanner
+      shell: bash
+      run: |
+        TARGET=$(realpath "${{ inputs.target-path }}")
+        OUTPUT="$GITHUB_WORKSPACE/${{ inputs.output-file }}"
+        
+        node ${{ github.action_path }}/../../iam-policy-lens/scripts/ts/dist/analyzer.js "$TARGET" > "$OUTPUT"
+    - name: Generate PR Annotations and Summary
+      shell: bash
+      run: python3 ${{ github.action_path }}/../reporter/annotator.py "$GITHUB_WORKSPACE/${{ inputs.output-file }}"

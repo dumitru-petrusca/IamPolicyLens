@@ -1,0 +1,4 @@
+# Exclude non-skill directories and GitHub Actions from npx/npm skill bundle
+.github/
+actions/
+gcp_cost_optimizer_agent/
