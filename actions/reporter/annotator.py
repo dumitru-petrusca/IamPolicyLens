@@ -48,6 +48,7 @@ def generate_annotations(json_path: str):
             if source_line:
                 message += f" | Code: {source_line}"
 
+            print(f"DEBUG GAPIC -> rel_path='{rel_path}', line={line}, fqn='{fullname}'")
             # Output GitHub Action Notice string for inline PR annotation
             print(f"::notice file={rel_path},line={line},title={title}::{message}")
 
