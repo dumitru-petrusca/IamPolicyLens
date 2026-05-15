@@ -52,7 +52,7 @@ func ScanProject(projectPath string) (<-chan GapicCall, error) {
 			if len(pkg.Errors) > 0 {
 				// Continue scanning despite package compilation errors in target project
 				for _, err := range pkg.Errors {
-					fmt.Printf("Package load warning: %v\n", err)
+					fmt.Fprintf(os.Stderr, "Package load warning: %v\n", err)
 				}
 			}
 			for _, fileNode := range pkg.Syntax {
