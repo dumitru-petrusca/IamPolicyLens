@@ -26,7 +26,13 @@ runs:
         python-version: '3.11'
     - name: Install Scanner Dependencies
       shell: bash
-      run: pip install jedi
+      run: |
+        pip install jedi
+        TARGET_REQ="${{ inputs.target-path }}/requirements.txt"
+        if [ -f "$TARGET_REQ" ]; then
+          echo "Installing target dependencies from $TARGET_REQ..."
+          pip install -r "$TARGET_REQ"
+        fi
     - name: Run Python Scanner
       shell: bash
       run: |
