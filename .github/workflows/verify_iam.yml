@@ -1,0 +1,38 @@
+name: Static IAM least-privilege verification
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  verify-iam:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required to trace git diff for changed files
+
+      # 1. Scan Python source code to discover all Google Cloud API client calls
+      - name: Run Python Scanner
+        id: python-scan
+        uses: ./actions/analyze-python
+        with:
+          target-path: 'gcp_cost_optimizer_agent/python'
+          python-environment: 'gcp_cost_optimizer_agent/python/.venv'
+          output-file: 'python-gapic-calls.json'
+
+      # 2. Generate required GCP IAM V3 Allow Policy JSON from discovered API calls
+      - name: Generate Consolidated IAM Policy
+        run: |
+          python3 iam-policy-lens/scripts/policy/policy.py < python-gapic-calls.json --json > python-policy.json
+
+      # 3. Run Static IAM Least-Privilege Verification against Terraform configs
+      - name: Verify Terraform IAM least-privilege
+        uses: ./actions/terraform
+        with:
+          tf-dir: 'gcp_cost_optimizer_agent/python/terraform'
+          policy-json: 'python-policy.json'
+          gapic-calls: 'python-gapic-calls.json'
+          fail-on-extra: 'false' # Flag over-privileged permissions as warnings instead of failing the build
