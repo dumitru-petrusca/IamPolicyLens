@@ -63,14 +63,7 @@ def generate_annotations(json_path: str):
             client = call.get("client_fullname", "N/A") or "N/A"
             source_line = call.get("source_line", "").strip()
 
-            title = "GCP Client Invocation Discovered"
-            message = f"{fullname} (Client: {client})"
-            if source_line:
-                message += f" | Code: {source_line}"
-
             print(f"DEBUG GAPIC -> rel_path='{rel_path}', line={line}, fqn='{fullname}'")
-            # Output GitHub Action Notice string for inline PR annotation
-            print(f"::notice file={rel_path},line={line},title={title}::{message}")
 
             # Append to table for GitHub Step Summary
             summary_lines.append(f"| `{rel_path}` | `{line}` | `{fullname}` | `{client}` |")
