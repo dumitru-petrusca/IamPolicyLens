@@ -150,6 +150,7 @@ resource "google_project_iam_custom_role" "agent_custom_role" {
     "aiplatform.reasoningEngines.predict",
     "aiplatform.reasoningEngines.list",
     "aiplatform.reasoningEngines.get",
+    "storage.objects.create",
   ]
 }
 

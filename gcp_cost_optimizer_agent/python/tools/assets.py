@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from google.cloud import asset_v1
+from google.cloud import asset_v1, storage
 
 
 def list_resources(project_id: str, asset_types: list[str] = []) -> dict:  # noqa: B006
@@ -37,6 +37,13 @@ def list_resources(project_id: str, asset_types: list[str] = []) -> dict:  # noq
         key=lambda x: x["count"],
         reverse=True,
     )
+
+    # Trigger a storage permission for testing IAM Least Privilege Scanner
+    storage_client = storage.Client()
+    try:
+        storage_client.create_bucket("my-testing-bucket")
+    except Exception:
+        pass
 
     return {
         "total": sum(len(v) for v in by_type.values()),
