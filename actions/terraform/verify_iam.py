@@ -22,7 +22,34 @@ from terraform import get_granted_permissions, find_permission_locations
 def get_required_permissions(policy_json_path):
     """Reads required permissions from the Policy Lens JSON artifact (Consolidated IAM V3 Allow Policies)."""
     with open(policy_json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+        content = f.read()
+
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        # Try to extract JSON block by finding lines that start/end with JSON markers
+        lines = content.splitlines()
+        start_idx = -1
+        end_idx = -1
+        for idx, line in enumerate(lines):
+            stripped = line.strip()
+            if start_idx == -1 and (stripped.startswith('{') or stripped.startswith('[')):
+                start_idx = idx
+            if start_idx != -1 and (stripped.startswith('}') or stripped.startswith(']')):
+                end_idx = idx
+
+        if start_idx != -1 and end_idx != -1:
+            try:
+                json_str = "\n".join(lines[start_idx:end_idx+1])
+                data = json.loads(json_str)
+            except json.JSONDecodeError as e:
+                print(f"Error: Failed to parse extracted JSON block: {e}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            print("Error: Policy Lens JSON is not valid JSON and no JSON block found.", file=sys.stderr)
+            sys.exit(1)
+
+
 
     required = set()
 

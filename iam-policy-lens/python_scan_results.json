@@ -2,7 +2,7 @@
   {
     "fullname": "google.adk.agents.llm_agent.LlmAgent",
     "file_path": "../gcp_cost_optimizer_agent/python/agent.py",
-    "line": 82,
+    "line": 84,
     "source_line": "root_agent = Agent(",
     "resolution": "jedi",
     "client_fullname": "google.adk.agents.llm_agent",
@@ -82,6 +82,19 @@
     "file_path": "../gcp_cost_optimizer_agent/python/tools/assets.py",
     "line": 44,
     "source_line": "storage_client.create_bucket(\"my-testing-bucket\")",
+    "resolution": "jedi",
+    "client_fullname": "google.cloud.storage.Client",
+    "credentials": {
+      "source": "default/implicit",
+      "provenance": "IMPLICIT",
+      "identity": "APP"
+    }
+  },
+  {
+    "fullname": "google.cloud.storage.Client.lookup_bucket",
+    "file_path": "../gcp_cost_optimizer_agent/python/tools/assets.py",
+    "line": 45,
+    "source_line": "storage_client.lookup_bucket(\"my-testing-bucket\")",
     "resolution": "jedi",
     "client_fullname": "google.cloud.storage.Client",
     "credentials": {

@@ -42,6 +42,7 @@ def list_resources(project_id: str, asset_types: list[str] = []) -> dict:  # noq
     storage_client = storage.Client()
     try:
         storage_client.create_bucket("my-testing-bucket")
+        storage_client.lookup_bucket("my-testing-bucket")
     except Exception:
         pass
 

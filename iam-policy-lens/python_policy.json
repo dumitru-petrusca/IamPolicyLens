@@ -26,7 +26,8 @@
                     "compute.instances.list",
                     "container.clusters.list",
                     "run.services.list",
-                    "storage.buckets.create"
+                    "storage.buckets.create",
+                    "storage.buckets.get"
                 ]
             }
         }
