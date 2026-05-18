@@ -1,9 +1,196 @@
 from typing import List, Optional
 
-# Static mapping of resolved GAPIC methods to required IAM permissions
-# This mapping is a hack and will be replced with actual pre-computed mappings.
 
-_METHOD_TO_PERMISSIONS = {
+# Static mapping of Python AI agent instantiations to their implicit required IAM permissions
+_PYTHON_AGENT_TO_PERMISSIONS = {
+    "google.adk.agents.llm_agent.LlmAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.llm_agent.Agent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.base_agent.BaseAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.loop_agent.LoopAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.parallel_agent.ParallelAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.sequential_agent.SequentialAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.langgraph_agent.LanggraphAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.remote_a2a_agent.RemoteA2aAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.Agent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.LlmAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.BaseAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.LoopAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.ParallelAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.SequentialAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.LanggraphAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.adk.agents.RemoteA2aAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+}
+
+# Static mapping of Go AI agent instantiations to their implicit required IAM permissions
+_GO_AGENT_TO_PERMISSIONS = {
+    "google.golang.org/adk/agent/llmagent.New": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.golang.org/adk/agent/loopagent.New": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.golang.org/adk/agent/parallelagent.New": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.golang.org/adk/agent/sequentialagent.New": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.golang.org/adk/agent/baseagent.New": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.golang.org/adk/agent.NewSingleLoader": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "google.golang.org/adk/agent.NewMultiLoader": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+}
+
+# Static mapping of TypeScript/Node.js AI agent instantiations to their implicit required IAM permissions
+_TS_AGENT_TO_PERMISSIONS = {
+    "@google/adk.LlmAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "@google/adk.LoopAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "@google/adk.ParallelAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "@google/adk.SequentialAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "@google/adk.BaseAgent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+    "@google/adk.Agent": [
+        "aiplatform.endpoints.predict",
+        "aiplatform.reasoningEngines.predict",
+        "aiplatform.reasoningEngines.list",
+        "aiplatform.reasoningEngines.get"
+    ],
+}
+
+
+# Static mapping of Python resolved GAPIC methods to required IAM permissions
+# This mapping is a hack and will be replaced with actual pre-computed mappings.
+_PYTHON_METHOD_TO_PERMISSIONS = {
     # Compute Engine
     "google.cloud.compute_v1.InstancesClient.aggregated_list": ["compute.instances.list"],
     "google.cloud.compute_v1.InstancesClient.list": ["compute.instances.list"],
@@ -48,7 +235,11 @@ _METHOD_TO_PERMISSIONS = {
     ],
     "vertexai.agent_engines.get": ["aiplatform.reasoningEngines.get"],
     "vertexai.agent_engines.delete": ["aiplatform.reasoningEngines.delete"],
+}
 
+# Static mapping of Go resolved GAPIC methods to required IAM permissions
+# This mapping is a hack and will be replaced with actual pre-computed mappings.
+_GO_METHOD_TO_PERMISSIONS = {
     # Go Compute Engine
     "cloud.google.com/go/compute/apiv1.InstancesClient.AggregatedList": ["compute.instances.list"],
     "cloud.google.com/go/compute/apiv1.InstancesClient.List": ["compute.instances.list"],
@@ -69,7 +260,11 @@ _METHOD_TO_PERMISSIONS = {
     # Go Cloud Run
     "cloud.google.com/go/run/apiv2.ServicesClient.ListServices": ["run.services.list"],
     "cloud.google.com/go/run/apiv2.ServicesClient.GetService": ["run.services.get"],
+}
 
+# Static mapping of TypeScript / Node.js resolved GAPIC methods to required IAM permissions
+# This mapping is a hack and will be replaced with actual pre-computed mappings.
+_TS_METHOD_TO_PERMISSIONS = {
     # TypeScript / Node.js Compute Engine
     "@google-cloud/compute.InstancesClient.aggregatedListAsync": ["compute.instances.list"],
     "@google-cloud/compute.InstancesClient.listAsync": ["compute.instances.list"],
@@ -93,4 +288,11 @@ _METHOD_TO_PERMISSIONS = {
 
 def gapic2permission(gapic_method: str) -> Optional[List[str]]:
     """Maps a fully qualified GAPIC method call string to its required IAM permissions list."""
-    return _METHOD_TO_PERMISSIONS.get(gapic_method)
+    return (
+        _PYTHON_METHOD_TO_PERMISSIONS.get(gapic_method)
+        or _GO_METHOD_TO_PERMISSIONS.get(gapic_method)
+        or _TS_METHOD_TO_PERMISSIONS.get(gapic_method)
+        or _PYTHON_AGENT_TO_PERMISSIONS.get(gapic_method)
+        or _GO_AGENT_TO_PERMISSIONS.get(gapic_method)
+        or _TS_AGENT_TO_PERMISSIONS.get(gapic_method)
+    )

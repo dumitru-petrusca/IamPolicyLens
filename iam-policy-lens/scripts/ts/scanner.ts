@@ -37,7 +37,7 @@ export function scanProject(projectPath: string): GapicCall[] {
     }
 
     ts.forEachChild(sourceFile, function visit(node: ts.Node) {
-      if (ts.isCallExpression(node)) {
+      if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
         const expr = node.expression;
         if (ts.isPropertyAccessExpression(expr)) {
           const methodName = expr.name.text;

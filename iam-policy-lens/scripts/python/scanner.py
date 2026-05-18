@@ -18,7 +18,7 @@ def find_gapic_calls(sources_path: str, python_env: str = None) -> List[GapicCal
     env = None
     if python_env:
         try:
-            env = jedi.create_environment(python_env)
+            env = jedi.create_environment(python_env, safe=False)
             print(f"Using Jedi environment: {python_env}", file=sys.stderr)
         except Exception as e:
             print(f"Error creating Jedi environment for {python_env}: {e}", file=sys.stderr)
