@@ -1,4 +1,6 @@
 """GCP Cost Optimizer — ADK agent definition."""
+# Test change to trigger static IAM least-privilege verification workflow
+
 
 from __future__ import annotations
 
