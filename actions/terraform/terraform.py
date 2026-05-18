@@ -15,15 +15,24 @@ from typing import Set, Dict, List, Tuple
 
 
 @dataclass
+class Location:
+    file: str
+    line: int
+
+@dataclass
+class Permission:
+    name: str
+    locations: List[Location]
+    
+
+@dataclass
 class TerraformScanResult:
-    granted_permissions: Set[str]
-    permission_locations: Dict[str, List[Tuple[str, int]]]
+    permissions: List[Permission]
 
 
 def scan_granted_permissions(tf_dir: str) -> TerraformScanResult:
     """Statically scans all .tf files in a directory to extract permissions defined in custom roles and their line numbers."""
-    granted: Set[str] = set()
-    locations: Dict[str, List[Tuple[str, int]]] = {}  # permission -> list of (file_path, line_number)
+    locations: Dict[str, List[Location]] = {}  # permission -> list of Location
 
     if not os.path.exists(tf_dir):
         print(f"Error: Terraform directory '{tf_dir}' does not exist.", file=sys.stderr)
@@ -60,12 +69,17 @@ def scan_granted_permissions(tf_dir: str) -> TerraformScanResult:
                         perms = re.findall(r'"([^"]+)"', line)
                         for perm in perms:
                             if "." in perm and " " not in perm:
-                                granted.add(perm)
-                                locations.setdefault(perm, []).append((file_path, line_num))
+                                locations.setdefault(perm, []).append(
+                                    Location(file=file_path, line=line_num)
+                                )
             except Exception as e:
                 print(f"Warning: Error parsing HCL from {filename}: {e}", file=sys.stderr)
 
+    permissions_list = [
+        Permission(name=perm_name, locations=loc_list)
+        for perm_name, loc_list in locations.items()
+    ]
+
     return TerraformScanResult(
-        granted_permissions=granted,
-        permission_locations=locations,
+        permissions=permissions_list,
     )

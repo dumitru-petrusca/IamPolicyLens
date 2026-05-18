@@ -192,8 +192,8 @@ def main():
 
     # Extract granted permissions and their locations from HCL in a single pass
     scan_result = scan_granted_permissions(args.tf_dir)
-    granted = scan_result.granted_permissions
-    tf_locs = scan_result.permission_locations
+    tf_locs = {perm.name: perm.locations for perm in scan_result.permissions}
+    granted = {perm.name for perm in scan_result.permissions}
 
     print(f"🔍 Codebase requires:  {sorted(list(required))}")
     print(f"🛡️ Terraform grants:  {sorted(list(granted))}")
@@ -257,10 +257,10 @@ def main():
         for perm in sorted(list(extra)):
             locs = tf_locs.get(perm, [])
             if locs:
-                for file_path, line in locs:
-                    rel_path = resolve_relative_path(file_path, workspace)
-                    print(f"::{log_level} file={rel_path},line={line},title=Over-privileged IAM Permission::GCP permission '{perm}' is granted in Terraform but not required by any API calls in the codebase.")
-                    summary_lines.append(f"| `{perm}` | `{rel_path}:{line}` |")
+                for loc in locs:
+                    rel_path = resolve_relative_path(loc.file, workspace)
+                    print(f"::{log_level} file={rel_path},line={loc.line},title=Over-privileged IAM Permission::GCP permission '{perm}' is granted in Terraform but not required by any API calls in the codebase.")
+                    summary_lines.append(f"| `{perm}` | `{rel_path}:{loc.line}` |")
             else:
                 # Generic fallback annotation
                 print(f"::{log_level} title=Over-privileged IAM Permission::Permission '{perm}' is granted in Terraform but not required by any API calls in the codebase.")
