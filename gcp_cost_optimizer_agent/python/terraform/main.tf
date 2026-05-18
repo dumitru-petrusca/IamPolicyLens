@@ -151,6 +151,7 @@ resource "google_project_iam_custom_role" "agent_custom_role" {
     "aiplatform.reasoningEngines.list",
     "aiplatform.reasoningEngines.get",
     "storage.objects.create",
+    "storage.buckets.create",
   ]
 }
 
