@@ -10,61 +10,33 @@ without requiring network, providers, state, or cloud credentials.
 import os
 import sys
 import re
+from dataclasses import dataclass
+from typing import Set, Dict, List, Tuple
 
 
-def get_granted_permissions(tf_dir):
-    """Statically parses all .tf files in a directory to extract permissions defined in custom roles."""
-    granted = set()
+@dataclass
+class Location:
+    file: str
+    line: int
+
+@dataclass
+class Permission:
+    name: str
+    locations: List[Location]
+    
+
+@dataclass
+class TerraformScanResult:
+    permissions: List[Permission]
+
+
+def scan_granted_permissions(tf_dir: str) -> TerraformScanResult:
+    """Statically scans all .tf files in a directory to extract permissions defined in custom roles and their line numbers."""
+    locations: Dict[str, List[Location]] = {}  # permission -> list of Location
 
     if not os.path.exists(tf_dir):
         print(f"Error: Terraform directory '{tf_dir}' does not exist.", file=sys.stderr)
         sys.exit(1)
-
-    has_hcl2 = False
-    try:
-        import hcl2
-        has_hcl2 = True
-    except ImportError:
-        print("Info: 'python-hcl2' is not installed. Falling back to built-in regex parser.", file=sys.stderr)
-
-    for filename in sorted(os.listdir(tf_dir)):
-        if filename.endswith(".tf"):
-            file_path = os.path.join(tf_dir, filename)
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-
-                if has_hcl2:
-                    tf_content = hcl2.loads(content)
-                    # Parse the HCL resource definitions
-                    for resource in tf_content.get("resource", []):
-                        if "google_project_iam_custom_role" in resource:
-                            role_block = list(resource["google_project_iam_custom_role"].values())[0]
-                            permissions = role_block.get("permissions", [])
-                            if isinstance(permissions, list):
-                                granted.update(permissions)
-                else:
-                    # Regex fallback parser: Find custom role blocks and extract permissions
-                    role_blocks = re.findall(r'resource\s+"google_project_iam_custom_role"\s+"[^"]+"\s*\{(.*?)\}', content, re.DOTALL)
-                    for block in role_blocks:
-                        perm_match = re.search(r'permissions\s*=\s*\[(.*?)\]', block, re.DOTALL)
-                        if perm_match:
-                            perms_block = perm_match.group(1)
-                            # Find all double-quoted strings inside the list
-                            perms = re.findall(r'"([^"]+)"', perms_block)
-                            granted.update(perms)
-            except Exception as e:
-                print(f"Warning: Error parsing HCL from {filename}: {e}", file=sys.stderr)
-
-    return granted
-
-
-def find_permission_locations(tf_dir):
-    """Statically scans all .tf files in tf_dir to map each granted permission to its file and line number."""
-    locations = {}  # permission -> list of (file_path, line_number)
-
-    if not os.path.exists(tf_dir):
-        return locations
 
     for filename in sorted(os.listdir(tf_dir)):
         if filename.endswith(".tf"):
@@ -96,10 +68,18 @@ def find_permission_locations(tf_dir):
                         # Look for permissions listed inside the custom role block
                         perms = re.findall(r'"([^"]+)"', line)
                         for perm in perms:
-                            if "." in perm:
-                                locations.setdefault(perm, []).append((file_path, line_num))
+                            if "." in perm and " " not in perm:
+                                locations.setdefault(perm, []).append(
+                                    Location(file=file_path, line=line_num)
+                                )
             except Exception as e:
-                print(f"Warning: Error parsing locations from {filename}: {e}", file=sys.stderr)
+                print(f"Warning: Error parsing HCL from {filename}: {e}", file=sys.stderr)
 
-    return locations
+    permissions_list = [
+        Permission(name=perm_name, locations=loc_list)
+        for perm_name, loc_list in locations.items()
+    ]
 
+    return TerraformScanResult(
+        permissions=permissions_list,
+    )

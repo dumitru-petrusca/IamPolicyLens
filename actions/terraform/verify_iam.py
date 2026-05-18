@@ -16,7 +16,7 @@ import sys
 import json
 import argparse
 import re
-from terraform import get_granted_permissions, find_permission_locations
+from terraform import scan_granted_permissions
 
 
 def resolve_relative_path(file_path, workspace):
@@ -190,8 +190,10 @@ def main():
         print(f"Error loading Policy Lens JSON: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Extract granted permissions from HCL
-    granted = get_granted_permissions(args.tf_dir)
+    # Extract granted permissions and their locations from HCL in a single pass
+    scan_result = scan_granted_permissions(args.tf_dir)
+    tf_locs = {perm.name: perm.locations for perm in scan_result.permissions}
+    granted = {perm.name for perm in scan_result.permissions}
 
     print(f"🔍 Codebase requires:  {sorted(list(required))}")
     print(f"🛡️ Terraform grants:  {sorted(list(granted))}")
@@ -210,7 +212,6 @@ def main():
 
     # Resolve missing permissions source locations if possible
     missing_locs = get_missing_permission_locations(args.gapic_calls, missing)
-    tf_locs = find_permission_locations(args.tf_dir)
 
     if missing:
         failed = True
@@ -256,10 +257,10 @@ def main():
         for perm in sorted(list(extra)):
             locs = tf_locs.get(perm, [])
             if locs:
-                for file_path, line in locs:
-                    rel_path = resolve_relative_path(file_path, workspace)
-                    print(f"::{log_level} file={rel_path},line={line},title=Over-privileged IAM Permission::GCP permission '{perm}' is granted in Terraform but not required by any API calls in the codebase.")
-                    summary_lines.append(f"| `{perm}` | `{rel_path}:{line}` |")
+                for loc in locs:
+                    rel_path = resolve_relative_path(loc.file, workspace)
+                    print(f"::{log_level} file={rel_path},line={loc.line},title=Over-privileged IAM Permission::GCP permission '{perm}' is granted in Terraform but not required by any API calls in the codebase.")
+                    summary_lines.append(f"| `{perm}` | `{rel_path}:{loc.line}` |")
             else:
                 # Generic fallback annotation
                 print(f"::{log_level} title=Over-privileged IAM Permission::Permission '{perm}' is granted in Terraform but not required by any API calls in the codebase.")

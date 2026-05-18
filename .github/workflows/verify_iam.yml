@@ -1,4 +1,4 @@
-name: Static IAM least-privilege verification
+name: IAM Policy Lens
 
 on:
   pull_request:
