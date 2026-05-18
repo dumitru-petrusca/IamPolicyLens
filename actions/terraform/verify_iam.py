@@ -191,7 +191,9 @@ def main():
         sys.exit(1)
 
     # Extract granted permissions and their locations from HCL in a single pass
-    granted, tf_locs = scan_granted_permissions(args.tf_dir)
+    scan_result = scan_granted_permissions(args.tf_dir)
+    granted = scan_result.granted_permissions
+    tf_locs = scan_result.permission_locations
 
     print(f"🔍 Codebase requires:  {sorted(list(required))}")
     print(f"🛡️ Terraform grants:  {sorted(list(granted))}")

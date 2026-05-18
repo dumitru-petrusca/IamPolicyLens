@@ -10,10 +10,17 @@ without requiring network, providers, state, or cloud credentials.
 import os
 import sys
 import re
+from dataclasses import dataclass
 from typing import Set, Dict, List, Tuple
 
 
-def scan_granted_permissions(tf_dir: str) -> Tuple[Set[str], Dict[str, List[Tuple[str, int]]]]:
+@dataclass
+class TerraformScanResult:
+    granted_permissions: Set[str]
+    permission_locations: Dict[str, List[Tuple[str, int]]]
+
+
+def scan_granted_permissions(tf_dir: str) -> TerraformScanResult:
     """Statically scans all .tf files in a directory to extract permissions defined in custom roles and their line numbers."""
     granted: Set[str] = set()
     locations: Dict[str, List[Tuple[str, int]]] = {}  # permission -> list of (file_path, line_number)
@@ -58,4 +65,7 @@ def scan_granted_permissions(tf_dir: str) -> Tuple[Set[str], Dict[str, List[Tupl
             except Exception as e:
                 print(f"Warning: Error parsing HCL from {filename}: {e}", file=sys.stderr)
 
-    return granted, locations
+    return TerraformScanResult(
+        granted_permissions=granted,
+        permission_locations=locations,
+    )
