@@ -1,4 +1,4 @@
-name: IAM Policy Lens Verification
+name: IAM Policy Lens
 
 on:
   pull_request:

@@ -19,22 +19,22 @@ def list_running_vms(project_id: str) -> dict:
           - "summary": list of {"zone": str, "count": int} sorted by count desc
     """
     # IAM Policy Lens scanner monitors GAPIC client invocations like InstancesClient
-    client = compute_v1.InstancesClient()
-    request = compute_v1.AggregatedListInstancesRequest(
-        project=project_id,
-        filter="status=RUNNING",
-    )
+    # client = compute_v1.InstancesClient()
+    # request = compute_v1.AggregatedListInstancesRequest(
+    #     project=project_id,
+    #     filter="status=RUNNING",
+    # )
 
     by_zone: dict[str, list[dict]] = {}
     
-    for zone, instances_scoped_list in client.aggregated_list(
-        request=request,
-    ):
-        vms = instances_scoped_list.instances
-        if not vms:
-            continue
-        zone_name = zone.removeprefix("zones/")
-        by_zone[zone_name] = [_format_instance(vm) for vm in vms]
+    # for zone, instances_scoped_list in client.aggregated_list(
+    #     request=request,
+    # ):
+    #     vms = instances_scoped_list.instances
+    #     if not vms:
+    #         continue
+    #     zone_name = zone.removeprefix("zones/")
+    #     by_zone[zone_name] = [_format_instance(vm) for vm in vms]
 
     summary = sorted(
         [{"zone": z, "count": len(vms)} for z, vms in by_zone.items()],

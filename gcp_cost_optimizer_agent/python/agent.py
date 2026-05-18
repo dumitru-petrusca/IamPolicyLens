@@ -10,7 +10,6 @@ from google.adk.agents import Agent
 from .tools.agent_engines import list_agent_engines
 from .tools.assets import list_resources
 from .tools.billing import query_billing
-from .tools.compute import list_running_vms
 from .tools.containers import list_cloud_run_services, list_gke_clusters
 
 
@@ -46,8 +45,6 @@ to delete, unnecessary services to disable
 Tools available:
 - list_resources: discover all GCP resources via Cloud Asset Inventory. This is \
 your primary discovery tool — it shows everything deployed in the project.
-- list_running_vms: list running Compute Engine instances with machine types. Use \
-this to identify oversized or idle VMs.
 - list_gke_clusters: list GKE clusters with node counts and machine types.
 - list_cloud_run_services: list Cloud Run services in a region.
 - list_agent_engines: list deployed Vertex AI Agent Engine (Reasoning Engine) \
@@ -87,7 +84,6 @@ root_agent = Agent(
     instruction=_build_instruction(),
     tools=[
         list_resources,
-        list_running_vms,
         list_gke_clusters,
         list_cloud_run_services,
         list_agent_engines,

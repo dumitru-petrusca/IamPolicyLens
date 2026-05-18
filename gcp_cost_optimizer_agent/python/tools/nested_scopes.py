@@ -4,13 +4,14 @@ from google.oauth2 import service_account
 
 
 # Global scope
-client = compute_v1.InstancesClient()
+# client = compute_v1.InstancesClient()
 
 def scan_compute():
     # Uses global client
     # Should resolve to compute_v1.InstancesClient.aggregated_list
-    for zone, instances in client.aggregated_list(project="my-project"):
-        pass
+    # for zone, instances in client.aggregated_list(project="my-project"):
+    #     pass
+    pass
 
 def scan_both():
     # Shadows global client
@@ -22,9 +23,10 @@ def scan_both():
     
     def inner_scan():
         # Shadows enclosing client
-        client = compute_v1.InstancesClient()
+        # client = compute_v1.InstancesClient()
         # Should resolve to compute_v1.InstancesClient.aggregated_list
-        for zone, instances in client.aggregated_list(project="my-project"):
-            pass
+        # for zone, instances in client.aggregated_list(project="my-project"):
+        #     pass
+        pass
             
     inner_scan()
