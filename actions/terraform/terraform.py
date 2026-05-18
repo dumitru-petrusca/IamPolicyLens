@@ -11,6 +11,12 @@ import os
 import sys
 import re
 
+try:
+    import hcl2
+    HAS_HCL2 = True
+except ImportError:
+    HAS_HCL2 = False
+
 
 def get_granted_permissions(tf_dir):
     """Statically parses all .tf files in a directory to extract permissions defined in custom roles."""
@@ -20,11 +26,7 @@ def get_granted_permissions(tf_dir):
         print(f"Error: Terraform directory '{tf_dir}' does not exist.", file=sys.stderr)
         sys.exit(1)
 
-    has_hcl2 = False
-    try:
-        import hcl2
-        has_hcl2 = True
-    except ImportError:
+    if not HAS_HCL2:
         print("Info: 'python-hcl2' is not installed. Falling back to built-in regex parser.", file=sys.stderr)
 
     for filename in sorted(os.listdir(tf_dir)):
@@ -34,7 +36,7 @@ def get_granted_permissions(tf_dir):
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
-                if has_hcl2:
+                if HAS_HCL2:
                     tf_content = hcl2.loads(content)
                     # Parse the HCL resource definitions
                     for resource in tf_content.get("resource", []):
