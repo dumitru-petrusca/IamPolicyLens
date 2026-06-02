@@ -20,13 +20,10 @@ verify-iam:
     # 1. Scan Python source code to discover Google Cloud API client calls
     - python3 iam-policy-lens/scripts/python/analyzer.py gcp_cost_optimizer_agent/python gcp_cost_optimizer_agent/python/.venv > python-gapic-calls.json
     
-    # 2. Generate Merge Request API invocation markdown summary for GitLab MR Widget
-    - python3 actions/reporter/annotator.py python-gapic-calls.json --gitlab-summary-file iam-scan-summary.md
-
-    # 3. Generate required GCP IAM V3 Allow Policy JSON from discovered API calls
+    # 2. Generate required GCP IAM V3 Allow Policy JSON from discovered API calls
     - python3 iam-policy-lens/scripts/policy/policy.py < python-gapic-calls.json --json > python-policy.json
     
-    # 4. Run Static IAM Least-Privilege Verification against Terraform configs
+    # 3. Run Static IAM Least-Privilege Verification against Terraform configs
     # This generates the standard CodeClimate JSON report for inline MR annotations, and a markdown summary
     - python3 actions/terraform/verify_iam_gitlab.py 
         --tf-dir gcp_cost_optimizer_agent/python/terraform 
@@ -39,7 +36,6 @@ verify-iam:
       - python-gapic-calls.json
       - python-policy.json
       - gl-code-quality-report.json
-      - iam-scan-summary.md
       - iam-verification-summary.md
     expose_as: "IAM Policy Lens Reports"
     reports:
