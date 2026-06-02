@@ -1,0 +1,53 @@
+stages:
+  - verify
+
+verify-iam:
+  stage: verify
+  image: python:3.11-slim
+  variables:
+    # Set GIT_DEPTH to 0 to pull the full git history.
+    # This enables the scanner/annotator to correctly trace git diffs for Merge Requests.
+    GIT_DEPTH: 0
+  before_script:
+    - apt-get update && apt-get install -y git
+    - pip install jedi
+    - |
+      if [ -f gcp_cost_optimizer_agent/python/requirements.txt ]; then
+        echo "Installing application dependencies..."
+        pip install -r gcp_cost_optimizer_agent/python/requirements.txt
+      fi
+  script:
+    # 1. Scan Python source code to discover Google Cloud API client calls
+    - python3 iam-policy-lens/scripts/python/analyzer.py gcp_cost_optimizer_agent/python gcp_cost_optimizer_agent/python/.venv > python-gapic-calls.json
+    
+    # 2. Generate Merge Request API invocation markdown summary for GitLab MR Widget
+    - python3 actions/reporter/annotator.py python-gapic-calls.json --gitlab-summary-file iam-scan-summary.md
+
+    # 3. Generate required GCP IAM V3 Allow Policy JSON from discovered API calls
+    - python3 iam-policy-lens/scripts/policy/policy.py < python-gapic-calls.json --json > python-policy.json
+    
+    # 4. Run Static IAM Least-Privilege Verification against Terraform configs
+    # This generates the standard CodeClimate JSON report for inline MR annotations, and a markdown summary
+    - python3 actions/terraform/verify_iam_gitlab.py 
+        --tf-dir gcp_cost_optimizer_agent/python/terraform 
+        --policy-json python-policy.json 
+        --gapic-calls python-gapic-calls.json
+  artifacts:
+    name: iam-verification-report
+    when: always
+    paths:
+      - python-gapic-calls.json
+      - python-policy.json
+      - gl-code-quality-report.json
+      - iam-scan-summary.md
+      - iam-verification-summary.md
+    expose_as: "IAM Policy Lens Reports"
+    reports:
+      codequality: gl-code-quality-report.json
+  rules:
+    # Trigger automatically on Merge Requests
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Trigger manually via the GitLab web UI
+    - if: $CI_PIPELINE_SOURCE == "web"
+    # Trigger on commits to the main/default branch
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

@@ -20,10 +20,7 @@ runs:
       uses: actions/setup-go@v5
       with:
         go-version: '>=1.21.0'
-    - name: Setup Python for Reporter
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+
     - name: Run Go Scanner
       shell: bash
       run: |
@@ -31,6 +28,4 @@ runs:
         OUTPUT="$GITHUB_WORKSPACE/${{ inputs.output-file }}"
         
         (cd ${{ github.action_path }}/../../iam-policy-lens/scripts/go && go run *.go "$TARGET") > "$OUTPUT"
-    - name: Generate PR Annotations and Summary
-      shell: bash
-      run: python3 ${{ github.action_path }}/../reporter/annotator.py "$GITHUB_WORKSPACE/${{ inputs.output-file }}"
+

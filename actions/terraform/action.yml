@@ -34,4 +34,4 @@ runs:
           ARGS="$ARGS --fail-on-extra"
         fi
         
-        python3 ${{ github.action_path }}/verify_iam.py $ARGS
+        python3 ${{ github.action_path }}/verify_iam_github.py $ARGS

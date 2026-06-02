@@ -20,10 +20,7 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-    - name: Setup Python for Reporter
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+
     - name: Build TypeScript Scanner
       shell: bash
       run: |
@@ -37,6 +34,4 @@ runs:
         OUTPUT="$GITHUB_WORKSPACE/${{ inputs.output-file }}"
         
         node ${{ github.action_path }}/../../iam-policy-lens/scripts/ts/dist/analyzer.js "$TARGET" > "$OUTPUT"
-    - name: Generate PR Annotations and Summary
-      shell: bash
-      run: python3 ${{ github.action_path }}/../reporter/annotator.py "$GITHUB_WORKSPACE/${{ inputs.output-file }}"
+

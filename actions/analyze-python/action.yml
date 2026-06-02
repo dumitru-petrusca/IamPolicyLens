@@ -44,6 +44,4 @@ runs:
         fi
         
         python3 ${{ github.action_path }}/../../iam-policy-lens/scripts/python/analyzer.py "$TARGET" $ENV_PARAM > "$OUTPUT"
-    - name: Generate PR Annotations and Summary
-      shell: bash
-      run: python3 ${{ github.action_path }}/../reporter/annotator.py "$GITHUB_WORKSPACE/${{ inputs.output-file }}"
+
