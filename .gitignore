@@ -6,3 +6,10 @@ dist/
 .venv/
 *.log
 .DS_Store
+
+# GitLab CI/CD Local & Scan Artifacts
+.gitlab-ci-local/
+python-gapic-calls.json
+python-policy.json
+gl-code-quality-report.json
+iam-verification-summary.md
