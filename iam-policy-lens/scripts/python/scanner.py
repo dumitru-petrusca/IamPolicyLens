@@ -2,6 +2,34 @@ import ast
 import os
 import sys
 import jedi
+import pathlib
+import traceback
+import jedi.parser_utils
+
+# Monkeypatch jedi.parser_utils.get_parso_cache_node to prevent KeyError with PosixPath on Python 3.14
+_orig_get_parso_cache_node = jedi.parser_utils.get_parso_cache_node
+
+def _patched_get_parso_cache_node(grammar, path):
+    try:
+        return _orig_get_parso_cache_node(grammar, path)
+    except KeyError:
+        if isinstance(path, pathlib.Path):
+            try:
+                return _orig_get_parso_cache_node(grammar, str(path))
+            except KeyError:
+                pass
+        elif isinstance(path, str):
+            try:
+                return _orig_get_parso_cache_node(grammar, pathlib.Path(path))
+            except KeyError:
+                pass
+        raise
+
+jedi.parser_utils.get_parso_cache_node = _patched_get_parso_cache_node
+
+import concurrent.futures
+import multiprocessing
+
 from gapic import GapicCall, clean_gapic_fqn, isRelevantImport
 from typing import List, Optional, Tuple
 from credentials import trace_credentials, extract_credentials_from_call
@@ -9,31 +37,73 @@ from credentials import trace_credentials, extract_credentials_from_call
 
 EXCLUDE_DIRS = {".venv", "venv", ".git", ".mypy_cache", "__pycache__", "build", "dist", "node_modules"}
 
+# Worker-local storage
+_worker_project = None
+_worker_env = None
+
+def _init_worker(sources_path: str, python_env: Optional[str]):
+    global _worker_project, _worker_env
+    import jedi
+    _worker_project = jedi.Project(sources_path)
+    _worker_env = None
+    if python_env:
+        try:
+            _worker_env = jedi.create_environment(python_env, safe=False)
+        except Exception:
+            pass
+
+def _scan_file_wrapper(file_path: str) -> List[GapicCall]:
+    global _worker_project, _worker_env
+    return scan_file(file_path, _worker_project, _worker_project.path, _worker_env)
+
 
 def find_gapic_calls(sources_path: str, python_env: str = None) -> List[GapicCall]:
     """
     Analyzes a Python project using Jedi and returns a list of GapicCall objects.
+    Uses multi-processing to parallelize the scan across multiple CPU cores.
     """
     
-    env = None
-    if python_env:
-        try:
-            env = jedi.create_environment(python_env, safe=False)
-            print(f"Using Jedi environment: {python_env}", file=sys.stderr)
-        except Exception as e:
-            print(f"Error creating Jedi environment for {python_env}: {e}", file=sys.stderr)
-            print("Falling back to default environment.", file=sys.stderr)
-            
-    project = jedi.Project(sources_path)
-    
-    all_calls = []
+    # 1. Collect all scannable python files first
+    python_files = []
     for root, dirs, files in os.walk(sources_path):
         dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
         for file in files:
             if file.endswith(".py"):
-                file_path = os.path.join(root, file)
-                all_calls.extend(scan_file(file_path, project, sources_path, env))
+                python_files.append(os.path.join(root, file))
                 
+    total_files = len(python_files)
+    print(f"Found {total_files} Python files to analyze.", file=sys.stderr)
+    
+    num_workers = min(multiprocessing.cpu_count(), 8)
+    print(f"Analyzing in parallel using {num_workers} worker processes...", file=sys.stderr)
+    
+    all_calls = []
+    
+    # 2. Execute in parallel using ProcessPoolExecutor
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=num_workers,
+        initializer=_init_worker,
+        initargs=(sources_path, python_env)
+    ) as executor:
+        future_to_file = {executor.submit(_scan_file_wrapper, f): f for f in python_files}
+        
+        completed = 0
+        for future in concurrent.futures.as_completed(future_to_file):
+            completed += 1
+            percentage = (completed / total_files) * 100
+            sys.stderr.write(f"\rAnalyzing file {completed}/{total_files} ({percentage:.1f}%) ...")
+            sys.stderr.flush()
+            
+            try:
+                calls = future.result()
+                if calls:
+                    all_calls.extend(calls)
+            except Exception as e:
+                file_path = future_to_file[future]
+                print(f"\nError in worker scanning {file_path}: {e}", file=sys.stderr)
+                
+    sys.stderr.write("\n")
+    sys.stderr.flush()
     return all_calls
 
 
@@ -44,7 +114,7 @@ def scan_file(file_path: str, project: jedi.Project, sources_path: str, env) -> 
             content = f.read()
             lines = content.splitlines()
         tree = ast.parse(content)
-        script = jedi.Script(content, path=file_path, project=project, environment=env)
+        script = jedi.Script(path=file_path, project=project, environment=env)
         for node in ast.walk(tree):
             if isinstance(node, ast.Call):
                 call = _resolve_gapic_call(node, script, file_path, lines, tree)
@@ -52,6 +122,7 @@ def scan_file(file_path: str, project: jedi.Project, sources_path: str, env) -> 
                     calls.append(call)
     except Exception as e:
         print(f"Error scanning {file_path}: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
     return calls
 
 
@@ -63,7 +134,10 @@ def _resolve_gapic_call(node: ast.Call, script: jedi.Script, file_path: str, lin
     # Point Jedi to the end of the callee name to resolve the method
     line = node.func.end_lineno
     col = node.func.end_col_offset - 1
-    inferences = script.infer(line, col)
+    try:
+        inferences = script.infer(line, col)
+    except Exception:
+        return None
     
     for inf in inferences:
         fqn = inf.full_name
