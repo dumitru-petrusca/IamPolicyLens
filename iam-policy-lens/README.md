@@ -18,7 +18,7 @@
 ### Skill Installation
 To install the IAM Policy Lens skill into your agent, run:
 ```bash
-npx skills add dumitru-petrusca/skills
+npx skills add dumitru-petrusca/IamPolicyLens
 ```
 
 Once installed, the agent will automatically manage and install all required language-specific dependencies (Python virtual environments, TypeScript builds, and Go modules) as needed during execution.

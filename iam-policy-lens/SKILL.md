@@ -1,6 +1,6 @@
 ---
 name: iam-policy-lens
-description: Polyglot Cloud Access Scanner (Python, Go, & TypeScript) to statically identify Google Cloud (GAPIC) client library invocations, map them to required IAM permissions, and generate consolidated GCP IAM V3 Allow Policies.
+description: Polyglot Cloud Access Scanner (Python, Go, & TypeScript) to statically identify Google Cloud (GAPIC) client library invocations, map them to required IAM permissions, and generate consolidated GCP IAM Policies. Use whenever the user asks to generate required policies, update or verify policies declared in Terraform configuration, etc.
 ---
 
 # IAM Policy Lens Instructions
