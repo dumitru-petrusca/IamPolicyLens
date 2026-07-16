@@ -188,8 +188,6 @@ _TS_AGENT_TO_PERMISSIONS = {
 }
 
 
-# Static mapping of Python resolved GAPIC methods to required IAM permissions
-# This mapping is a hack and will be replaced with actual pre-computed mappings.
 _PYTHON_METHOD_TO_PERMISSIONS = {
     # Compute Engine
     "google.cloud.compute_v1.InstancesClient.aggregated_list": ["compute.instances.list"],
@@ -237,8 +235,6 @@ _PYTHON_METHOD_TO_PERMISSIONS = {
     "vertexai.agent_engines.delete": ["aiplatform.reasoningEngines.delete"],
 }
 
-# Static mapping of Go resolved GAPIC methods to required IAM permissions
-# This mapping is a hack and will be replaced with actual pre-computed mappings.
 _GO_METHOD_TO_PERMISSIONS = {
     # Go Compute Engine
     "cloud.google.com/go/compute/apiv1.InstancesClient.AggregatedList": ["compute.instances.list"],
@@ -262,8 +258,6 @@ _GO_METHOD_TO_PERMISSIONS = {
     "cloud.google.com/go/run/apiv2.ServicesClient.GetService": ["run.services.get"],
 }
 
-# Static mapping of TypeScript / Node.js resolved GAPIC methods to required IAM permissions
-# This mapping is a hack and will be replaced with actual pre-computed mappings.
 _TS_METHOD_TO_PERMISSIONS = {
     # TypeScript / Node.js Compute Engine
     "@google-cloud/compute.InstancesClient.aggregatedListAsync": ["compute.instances.list"],
