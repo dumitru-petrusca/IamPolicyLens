@@ -14,7 +14,7 @@ How It Works:
 3. Credential Tracing: Traces client instantiation (e.g., `storage.NewClient`) and variable declarations to classify credential provenance.
 4. JSON Output: Emits a structured JSON array conforming to `schema.json` to `stdout`, while logging progress to `stderr`.
 
-How to Run (from /Users/petrusca/Google/skills/iam-policy-lens):
+// How to Run (from the skill root directory):
 ----------------------------------------------------------------
 1. Run the analyzer passing the target project path as the first argument:
     go run scripts/go/*.go <path_to_project>

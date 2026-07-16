@@ -34,17 +34,17 @@ Chain the analyzer and policy generator together using standard Unix streams (`s
 
 #### For Python Projects:
 ```bash
-/Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> [python_env_path] | /Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> [python_env_path] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
 ```
 
 #### For Go Projects:
 ```bash
-(cd /Users/petrusca/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project>) | /Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
+(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project>) | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
 ```
 
 #### For TypeScript / Node.js Projects:
 ```bash
-node /Users/petrusca/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> | /Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
+node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
 ```
 
 ### 2. Two-Step Execution (Recommended for Auditing & Large Datasets)
@@ -52,10 +52,10 @@ Save the analyzer's structured JSON output to an intermediate file to avoid shel
 
 ```bash
 # Step 1: Generate scan artifact in a scratch location
-(cd /Users/petrusca/.agents/skills/iam-policy-lens/scripts/go && go run *.go /path/to/project) > /tmp/scan_results.json
+(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go /path/to/project) > /tmp/scan_results.json
 
 # Step 2: Generate IAM policies from artifact
-/Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scan_results.json
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scan_results.json
 ```
 
 ---
@@ -66,37 +66,37 @@ Save the analyzer's structured JSON output to an intermediate file to avoid shel
 
 #### Agent Execution Context & CWD Independence
 - **Working Directory Agnostic**: All scripts in this skill (`analyzer.py`, `policy.py`, etc.) dynamically resolve their own directory paths (`sys.path.append(os.path.dirname(__file__))`). They can be safely executed from any arbitrary `CWD` (such as an agent's active workspace).
-- **Self-Contained Environment**: The Python scripts rely exclusively on the virtual environment located at `/Users/petrusca/.agents/skills/iam-policy-lens/.venv`. They do not require activating the environment or setting external environment variables.
+- **Self-Contained Environment**: The Python scripts rely exclusively on the virtual environment located at `~/.agents/skills/iam-policy-lens/.venv`. They do not require activating the environment or setting external environment variables.
 
 #### Absolute Path Execution Templates (For External Agent Invocation)
 When invoking this skill from an external workspace, agents should construct absolute paths to both the skill's virtual environment and the script files:
 ```bash
 # Python Project Analysis Pipeline
-/Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <target_project_path> | /Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/policy/policy.py
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <target_project_path> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py
 ```
 
 ### Go
 
 #### Agent Execution Context & Module Isolation
-- **Subshell Execution Pattern**: `go run` requires executing directly within its own module directory (`/Users/petrusca/.agents/skills/iam-policy-lens/scripts/go`) to correctly load its local `go.mod` dependencies. However, agent execution tools (`run_command`) restrict the working directory (`Cwd`) to the active workspace.
+- **Subshell Execution Pattern**: `go run` requires executing directly within its own module directory (`~/.agents/skills/iam-policy-lens/scripts/go`) to correctly load its local `go.mod` dependencies. However, agent execution tools (`run_command`) restrict the working directory (`Cwd`) to the active workspace.
 - To cleanly satisfy both requirements without violating workspace restrictions, **always execute the Go analyzer inside a subshell** `(cd ... && go run ...)` that isolates module resolution across directory boundaries while keeping the primary tool working directory anchored in your workspace:
 
 ```bash
 # Executed from any workspace CWD
-(cd /Users/petrusca/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_target_project_path>) > /tmp/go_scan.json
+(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_target_project_path>) > /tmp/go_scan.json
 ```
 
 ### TypeScript
 
 #### Agent Execution Context & CWD Independence
 - **Working Directory Agnostic**: The compiled TypeScript analyzer (`scripts/ts/dist/analyzer.js`) uses `path.resolve` to handle target project paths and can be safely executed from any arbitrary `CWD`.
-- **Self-Contained Environment**: The TypeScript analyzer executes via `node` and relies on the local `node_modules` installed at `/Users/petrusca/.agents/skills/iam-policy-lens/scripts/ts/node_modules`. It does not require global packages or external environment variables. *(Note: Ensure `npm --prefix /Users/petrusca/.agents/skills/iam-policy-lens/scripts/ts run build` has been executed if modifying the analyzer).*
+- **Self-Contained Environment**: The TypeScript analyzer executes via `node` and relies on the local `node_modules` installed at `~/.agents/skills/iam-policy-lens/scripts/ts/node_modules`. It does not require global packages or external environment variables. *(Note: Ensure `npm --prefix ~/.agents/skills/iam-policy-lens/scripts/ts run build` has been executed if modifying the analyzer).*
 
 #### Absolute Path Execution Templates (For External Agent Invocation)
 When invoking this skill from an external workspace, agents should construct absolute paths to the compiled JavaScript analyzer and the Python virtual environment:
 ```bash
 # TypeScript Project Analysis Pipeline
-node /Users/petrusca/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <target_project_path> | /Users/petrusca/.agents/skills/iam-policy-lens/.venv/bin/python3 /Users/petrusca/.agents/skills/iam-policy-lens/scripts/policy/policy.py
+node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <target_project_path> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py
 ```
 
 ---
@@ -167,3 +167,11 @@ The policy generator consolidates permissions by attachment point and principal:
   ```
 - **Go Package Compilation Warnings**:
   The Go analyzer uses `golang.org/x/tools/go/packages` and will gracefully attempt to scan ASTs even if the target project has partial compilation errors.
+
+- **Missing or Broken Python Virtual Environment**:
+  If the virtual environment at `~/.agents/skills/iam-policy-lens/.venv` is missing or missing dependencies (like `jedi`), re-initialize it:
+  ```bash
+  python3 -m venv ~/.agents/skills/iam-policy-lens/.venv
+  ~/.agents/skills/iam-policy-lens/.venv/bin/pip install -r ~/.agents/skills/iam-policy-lens/scripts/python/requirements.txt
+  ```
+

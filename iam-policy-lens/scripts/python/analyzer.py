@@ -17,7 +17,7 @@ How to Run:
 -----------
 Run the script passing the target repository source path as the first argument:
     .venv/bin/python3 scripts/python/analyzer.py <path_to_project>
-    .venv/bin/python3  scripts/python/analyzer.py /Users/petrusca/Google/adk-samples/python/agents/data-science
+#    .venv/bin/python3  scripts/python/analyzer.py /path/to/your/project
     .venv/bin/python3 scripts/python/analyzer.py ./../gcp_cost_optimizer_agent/python
 """
 import os
