@@ -183,7 +183,34 @@ class Perm2RoleService:
                 permissions=list(covered_in_this_step)
             ))
 
-        return chosen_roles, uncovered
+        # Post-processing: Prune redundant roles (subsets of other chosen roles)
+        name_to_chosen = {cr.name: cr for cr in chosen_roles}
+        name_to_full = {r.name: r for r in candidates}
+        
+        redundant_names = set()
+        # Sort keys to ensure deterministic order of processing if needed, 
+        # but skipping redundant_names handles propagation correctly regardless of order.
+        for name1 in list(name_to_chosen.keys()):
+            cr1 = name_to_chosen[name1]
+            full1 = name_to_full[name1]
+            for name2, cr2 in name_to_chosen.items():
+                if name1 == name2 or name2 in redundant_names:
+                    continue
+                full2 = name_to_full[name2]
+                
+                if full1.permissions.issubset(full2.permissions):
+                    if full1.permissions == full2.permissions:
+                        if name1 > name2: # deterministic choice
+                            redundant_names.add(name1)
+                            cr2.permissions.update(cr1.permissions)
+                            break
+                    else:
+                        redundant_names.add(name1)
+                        cr2.permissions.update(cr1.permissions)
+                        break
+        
+        final_chosen_roles = [cr for cr in chosen_roles if cr.name not in redundant_names]
+        return final_chosen_roles, uncovered
 
 
 def main():
