@@ -1,11 +1,15 @@
 ---
 name: iam-policy-lens
-description: Polyglot Cloud Access Scanner (Python, Go, & TypeScript) to statically identify Google Cloud (GAPIC) client library invocations, map them to required IAM permissions, and generate consolidated GCP IAM Policies. Use whenever the user asks to generate required policies, update or verify policies declared in Terraform configuration, etc. When using this skill, rely on the ability f the skill's scripts to identify permisions from code, do not analyze the code again unless the user explicitly asks for it. 
+description: Polyglot Cloud Access Scanner (Python, Go, & TypeScript) to statically identify Google Cloud (GAPIC) client library invocations, map them to required IAM permissions, and generate consolidated GCP IAM Policies. Use whenever the user asks to generate required policies, update or verify policies declared in Terraform configuration, etc. When using this skill, rely on the ability of the skill's scripts to identify permissions from code, do not analyze the code again unless the user explicitly asks for it. 
 ---
 
 # IAM Policy Lens Instructions
 
+> [!IMPORTANT]
+> **Authority of Scanner**: Rely exclusively on the output of the skill's scripts (`analyzer.py`, `policy.py`) to determine required permissions and roles. **Do NOT manually browse or analyze the application code files** to verify, supplement, or re-do the analysis unless the user explicitly instructs you to perform a "manual review" or "check for blind spots". The skill is the authoritative source.
+
 Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) usage in Python, Go, or TypeScript projects to determine the exact IAM permissions, roles, or policies required by the codebase.
+
 
 ---
 
@@ -63,7 +67,7 @@ Save the analyzer's structured JSON output to an intermediate file to avoid shel
 The `policy.py` script supports the following options:
 
 - `--policy-kind {v1,v3}`: Specify the version of the policy to generate. Defaults to `v3`.
-- `--aev-only`: (V1 only) Filter inferred roles to only standard Admin, Editor, or Viewer roles.
+- `--aev-only`: (V1 only) Filter inferred roles to only standard Admin, Editor, or Viewer roles. This includes both **Basic Roles** (`roles/viewer`, `roles/editor`, `roles/admin`) and **Service-Specific AEV Roles** (e.g., `roles/compute.viewer`, `roles/bigquery.admin`).
 - `--dump-file`: Path to IAMDB JSON dump file (required for V1 policies, defaults to `iamdb_roles.json` in the same directory as `policy.py`).
 - `--service-account`: Default service account email to bind policies to.
 - `--json`: Output raw JSON array of generated policies.
