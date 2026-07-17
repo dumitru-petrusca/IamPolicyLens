@@ -13,7 +13,7 @@ Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) 
 
 - **GCP Code Audit**: Discover exactly what GCP services and methods a Python, Go, or TypeScript application invokes.
 - **IAM Permission Mapping**: Map high-level code invocations (e.g., `storage.buckets.create`) to granular IAM permissions before deploying or configuring Service Accounts.
-- **Automated Policy Generation**: Generate least-privilege, consolidated GCP IAM V3 Allow Policies tailored to the application's credential provenance (Service Accounts, Users, Impersonation).
+- **Automated Policy Generation**: Generate least-privilege, consolidated GCP IAM Policies (V1 or V3) tailored to the application's credential provenance (Service Accounts, Users, Impersonation).
 - **Security & Access Reviews**: Identify the exact security footprint and credential mechanisms used across the codebase.
 
 ---
@@ -22,7 +22,7 @@ Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) 
 
 The skill is split into a two-stage pipeline:
 1. **Analyzers (`scripts/python/analyzer.py`, `scripts/go/analyzer.go`, `scripts/ts/analyzer.ts`)**: Parse the target project AST/types, resolve fully qualified method names, extract credential provenance, and output structured JSON conforming to `schema.json`.
-2. **Policy Generator (`scripts/policy/policy.py`)**: Ingests the JSON call array from the analyzers (via `stdin`), maps methods to IAM permissions using `permissions.py`, resolves attachment points/principals, and outputs consolidated IAM V3 Allow Policies.
+2. **Policy Generator (`scripts/policy/policy.py`)**: Ingests the JSON call array from the analyzers (via `stdin`), maps methods to IAM permissions using `permissions.py`, resolves attachment points/principals, and outputs consolidated IAM Policies (V1 or V3).
 
 ---
 
@@ -34,17 +34,17 @@ Chain the analyzer and policy generator together using standard Unix streams (`s
 
 #### For Python Projects:
 ```bash
-~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> [python_env_path] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> [python_env_path] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--aev-only]
 ```
 
 #### For Go Projects:
 ```bash
-(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project>) | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
+(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project>) | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--aev-only]
 ```
 
 #### For TypeScript / Node.js Projects:
 ```bash
-node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json]
+node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--aev-only]
 ```
 
 ### 2. Two-Step Execution (Recommended for Auditing & Large Datasets)
@@ -55,8 +55,18 @@ Save the analyzer's structured JSON output to an intermediate file to avoid shel
 (cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go /path/to/project) > /tmp/scan_results.json
 
 # Step 2: Generate IAM policies from artifact
-~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scan_results.json
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scan_results.json [--policy-kind {v1,v3}] [--aev-only]
 ```
+
+### 3. Policy Generation Options
+
+The `policy.py` script supports the following options:
+
+- `--policy-kind {v1,v3}`: Specify the version of the policy to generate. Defaults to `v3`.
+- `--aev-only`: (V1 only) Filter inferred roles to only standard Admin, Editor, or Viewer roles.
+- `--dump-file`: Path to IAMDB JSON dump file (required for V1 policies, defaults to `iamdb_roles.json` in the same directory as `policy.py`).
+- `--service-account`: Default service account email to bind policies to.
+- `--json`: Output raw JSON array of generated policies.
 
 ---
 
@@ -123,8 +133,11 @@ The analyzer emits a clean JSON array of detected calls to `stdout` (while loggi
 ]
 ```
 
-### 2. Generated IAM V3 Policy Output
-The policy generator consolidates permissions by attachment point and principal:
+### 2. Generated IAM Policy Output
+
+The policy generator consolidates permissions by attachment point and principal. Depending on `--policy-kind`, the output format differs.
+
+#### V3 Policy Output (Default)
 
 ```json
 ====================================================
@@ -150,6 +163,33 @@ The policy generator consolidates permissions by attachment point and principal:
                     "container.clusters.list"
                 ]
             }
+        }
+    ]
+}
+====================================================
+```
+
+#### V1 Policy Output
+
+```json
+====================================================
+🔒 Generated GCP IAM V1 Policies
+====================================================
+
+📍 Attachment Point: projects/{project_id}
+{
+    "bindings": [
+        {
+            "role": "roles/bigquery.dataQnaUser",
+            "members": [
+                "serviceAccount:your-service-account@your-project.iam.gserviceaccount.com"
+            ]
+        },
+        {
+            "role": "roles/compute.vmExtensionPolicyViewer",
+            "members": [
+                "serviceAccount:your-service-account@your-project.iam.gserviceaccount.com"
+            ]
         }
     ]
 }
