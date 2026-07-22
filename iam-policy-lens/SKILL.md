@@ -38,17 +38,17 @@ Chain the analyzer and policy generator together using standard Unix streams (`s
 
 #### For Python Projects:
 ```bash
-~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> [python_env_path] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--aev-only]
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> [python_env_path] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--least-privilege]
 ```
 
 #### For Go Projects:
 ```bash
-(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project>) | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--aev-only]
+(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project>) | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--least-privilege]
 ```
 
 #### For TypeScript / Node.js Projects:
 ```bash
-node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--aev-only]
+node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--least-privilege]
 ```
 
 ### 2. Two-Step Execution (Recommended for Auditing & Large Datasets)
@@ -59,7 +59,7 @@ Save the analyzer's structured JSON output to an intermediate file to avoid shel
 (cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go /path/to/project) > /tmp/scan_results.json
 
 # Step 2: Generate IAM policies from artifact
-~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scan_results.json [--policy-kind {v1,v3}] [--aev-only]
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scan_results.json [--policy-kind {v1,v3}] [--least-privilege]
 ```
 
 ### 3. Policy Generation Options
@@ -67,7 +67,7 @@ Save the analyzer's structured JSON output to an intermediate file to avoid shel
 The `policy.py` script supports the following options:
 
 - `--policy-kind {v1,v3}`: Specify the version of the policy to generate. Defaults to `v3`.
-- `--aev-only`: (V1 only) Filter inferred roles to only standard Admin, Editor, or Viewer roles. This includes both **Basic Roles** (`roles/viewer`, `roles/editor`, `roles/admin`) and **Service-Specific AEV Roles** (e.g., `roles/compute.viewer`, `roles/bigquery.admin`).
+- `--least-privilege`: (V1 only) Infer fine-grained least-privilege roles. By default (`least_privilege=false`), V1 policies map permissions to standard AEV (Admin, Editor, Viewer) roles.
 - `--dump-file`: Path to IAMDB JSON dump file (required for V1 policies, defaults to `iamdb_roles.json` in the same directory as `policy.py`).
 - `--service-account`: Default service account email to bind policies to.
 - `--json`: Output raw JSON array of generated policies.

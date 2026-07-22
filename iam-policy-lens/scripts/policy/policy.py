@@ -190,9 +190,9 @@ if __name__ == "__main__":
         help="Path to IAMDB JSON dump file (required for V1 policies)."
     )
     parser.add_argument(
-        "--aev-only",
+        "--least-privilege",
         action="store_true",
-        help="Filter to only AEV roles (for V1 policies)."
+        help="Use fine-grained least privilege roles instead of the default AEV roles (for V1 policies)."
     )
 
     args = parser.parse_args()
@@ -206,7 +206,7 @@ if __name__ == "__main__":
         try:
             with open(args.dump_file, "r") as f:
                 roles_dump = json.load(f)
-            perm2role_service = Perm2RoleService(roles_dump, aev_only=args.aev_only)
+            perm2role_service = Perm2RoleService(roles_dump, least_privilege=args.least_privilege)
         except Exception as e:
             print(f"Error loading dump file: {e}", file=sys.stderr)
             sys.exit(1)

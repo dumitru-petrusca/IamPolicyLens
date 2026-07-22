@@ -61,7 +61,7 @@ class Role:
 class Perm2RoleService:
     """Service to infer roles from permissions."""
 
-    def __init__(self, roles_dump: List[Dict[str, Any]], aev_only: bool = False):
+    def __init__(self, roles_dump: List[Dict[str, Any]], least_privilege: bool = False):
         """Initializes the Perm2RoleService with dumped roles."""
         self.viewer_permissions: Set[str] = set()
         self.editor_permissions: Set[str] = set()
@@ -86,13 +86,13 @@ class Perm2RoleService:
             if r.get("service_name") == "service_roles" or name in SERVICE_AGENT_ROLES or name in SPECIALIZED_ROLES:
                 continue
 
-            if aev_only:
+            if least_privilege:
+                if name in BASIC_ROLES:
+                    continue
+            else:
                 is_basic_aev = name in {"roles/admin", "roles/editor", "roles/viewer"}
                 is_service_aev = name.endswith(".admin") or name.endswith(".editor") or name.endswith(".viewer")
                 if not is_basic_aev and not is_service_aev:
-                    continue
-            else:
-                if name in BASIC_ROLES:
                     continue
 
             role = Role(
@@ -218,7 +218,7 @@ def main():
     parser = argparse.ArgumentParser(description="Convert permissions to roles using IAMDB JSON dump.")
     parser.add_argument("--permissions", required=True, help="Comma-separated list of permissions")
     parser.add_argument("--dump_file", default="iamdb_roles.json", help="Path to IAMDB JSON dump file")
-    parser.add_argument("--aev_only", action="store_true", help="Filter to only AEV roles")
+    parser.add_argument("--least-privilege", "--least_privilege", action="store_true", help="Filter to least privilege roles instead of default AEV roles")
 
     args = parser.parse_args()
 
@@ -238,7 +238,7 @@ def main():
         print(f"Error reading file: {e}", file=sys.stderr)
         sys.exit(1)
 
-    service = Perm2RoleService(roles_dump, aev_only=args.aev_only)
+    service = Perm2RoleService(roles_dump, least_privilege=args.least_privilege)
 
     print(f"Inferring roles for permissions: {permissions}")
     chosen_roles, uncovered = service.infer(permissions)
