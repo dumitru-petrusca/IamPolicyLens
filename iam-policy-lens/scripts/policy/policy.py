@@ -68,6 +68,10 @@ def _resolve_principal(call: GapicCall, default_sa: str = "your-service-account@
             return "user:your-user-email@domain.com"
         return "principalSet://goog/subject/your-user-email@domain.com"
         
+    for prefix in ("principal://", "principalSet://", "serviceAccount:", "user:", "group:", "domain:"):
+        if sa_email.startswith(prefix):
+            return sa_email
+
     if version == "v1":
         return f"serviceAccount:{sa_email}"
     return f"principal://iam.googleapis.com/projects/-/serviceAccounts/{sa_email}"
