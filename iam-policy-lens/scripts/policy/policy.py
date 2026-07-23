@@ -164,9 +164,7 @@ def generate_iam_policies(calls: List[GapicCall], default_sa: str = None, versio
                 })
             generated_policies.append({
                 "attachment_point": attachment,
-                "policy": {
-                    "bindings": bindings
-                }
+                "bindings": bindings
             })
         return generated_policies
 
@@ -188,11 +186,9 @@ def generate_iam_policies(calls: List[GapicCall], default_sa: str = None, versio
         
         generated_policies.append({
             "attachment_point": attachment,
-            "policy": {
-                "name": policy_name,
-                "displayName": "Consolidated Workload Allow Policy",
-                "rules": rules
-            }
+            "name": policy_name,
+            "displayName": "Consolidated Workload Allow Policy",
+            "rules": rules
         })
         
     return generated_policies
@@ -214,11 +210,7 @@ if __name__ == "__main__":
         default=os.getenv("GCP_SERVICE_ACCOUNT"),
         help="Default service account email to bind policies to."
     )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output raw JSON array of generated policies instead of human-readable blocks."
-    )
+
     parser.add_argument(
         "--policy-kind",
         choices=["v1", "v3"],
@@ -293,14 +285,5 @@ if __name__ == "__main__":
         perm2role_service=perm2role_service
     )
 
-    if args.json:
-        print(json.dumps(policies, indent=2))
-    else:
-        print("\n====================================================")
-        print(f"🔒 Generated GCP IAM {args.policy_kind.upper()} Policies")
-        print("====================================================")
-        for p in policies:
-            print(f"\n📍 Attachment Point: {p['attachment_point']}")
-            print(json.dumps(p['policy'], indent=4))
-        print("\n====================================================")
+    print(json.dumps(policies, indent=2))
 

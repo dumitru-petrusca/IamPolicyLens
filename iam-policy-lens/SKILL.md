@@ -70,7 +70,6 @@ Run the policy generator tool using file redirection:
 - `--least-privilege`: (V1 only) Infer fine-grained least-privilege roles. By default (`least_privilege=false`), V1 policies map permissions to standard AEV (Admin, Editor, Viewer) roles. Use this flag **ONLY** when the user explicitly asks for least-privilege roles, otherwise omit it.
 - `--dump-file`: Path to IAMDB JSON dump file (required for V1 policies, defaults to `iamdb_roles.json` in the same directory as `policy.py`).
 - `--service-account`: Default service account email to bind policies to.
-- `--json`: Output raw JSON array of generated policies.
 
 ### Step 3: Cleanup
 Always delete the intermediate scan results file after your task is complete:
