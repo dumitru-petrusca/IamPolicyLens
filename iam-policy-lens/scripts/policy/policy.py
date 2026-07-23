@@ -82,6 +82,34 @@ def _resolve_attachment_point(call: GapicCall) -> str:
         
     return "projects/{project_id}"
 
+def _detect_agent_engine(calls: List[GapicCall], sa_email: str, version: str) -> tuple[Optional[str], Set[str]]:
+    """Detects the agent engine deployment platform (GEAPR or Cloud Run) and associated agent principals."""
+    engine = None
+    agent_principals = set()
+
+    for call in calls:
+        # Check if call is an ADK Agent definition/instantiation
+        if any(adk_pkg in call.fullname for adk_pkg in ("google.adk.agents", "@google/adk", "google.golang.org/adk/agent")):
+            agent_principals.add(_resolve_principal(call, sa_email, version))
+    
+    if agent_principals:
+        has_reasoning = any(
+            "reasoningEngines" in call.fullname or "agent_engines" in call.fullname or "aiplatform" in call.fullname
+            for call in calls
+        )
+        has_run = any(
+            "run_v2" in call.fullname or "run/apiv2" in call.fullname or "run.ServicesClient" in call.fullname
+            for call in calls
+        )
+        if has_reasoning:
+            engine = "reasoning_engine"
+        elif has_run:
+            engine = "cloud_run"
+        else:
+            engine = "reasoning_engine"  # Default fallback for ADK agents
+                
+    return engine, agent_principals
+
 def generate_iam_policies(calls: List[GapicCall], default_sa: str = None, version: str = "v3", perm2role_service: Optional['Perm2RoleService'] = None) -> List[Dict]:
     """Generates a set of consolidated GCP IAM Policies grouped by attachment point."""
     sa_email = default_sa or "your-service-account@your-project.iam.gserviceaccount.com"
@@ -99,6 +127,9 @@ def generate_iam_policies(calls: List[GapicCall], default_sa: str = None, versio
         
         policies_map.setdefault(attachment, {}).setdefault(principal, set()).update(permissions)
         
+    # Determine agent engine deployment for birthright roles (GEAPR / Cloud Run)
+    engine, agent_principals = _detect_agent_engine(calls, sa_email, version)
+                    
     if version == "v1":
         # Convert permissions to roles
         v1_policies_map: Dict[str, Dict[str, Set[str]]] = {}
@@ -113,6 +144,16 @@ def generate_iam_policies(calls: List[GapicCall], default_sa: str = None, versio
                 for role in chosen_roles:
                     v1_policies_map.setdefault(attachment, {}).setdefault(role.name, set()).add(principal)
         
+        # Augment with birthright roles at the project-level policy
+        if engine == "reasoning_engine":
+            for r in ["roles/aiplatform.agentDefaultAccess", "roles/aiplatform.agentContextEditor"]:
+                for principal in agent_principals:
+                    v1_policies_map.setdefault("projects/{project_id}", {}).setdefault(r, set()).add(principal)
+        elif engine == "cloud_run":
+            for r in ["roles/run.agent"]:
+                for principal in agent_principals:
+                    v1_policies_map.setdefault("projects/{project_id}", {}).setdefault(r, set()).add(principal)
+                    
         generated_policies = []
         for attachment, role_map in sorted(v1_policies_map.items()):
             bindings = []
@@ -195,6 +236,7 @@ if __name__ == "__main__":
         help="Use fine-grained least privilege roles instead of the default AEV roles (for V1 policies)."
     )
 
+
     args = parser.parse_args()
 
     perm2role_service = None
@@ -244,7 +286,12 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Warning: Skipping invalid call entry: {e}", file=sys.stderr)
 
-    policies = generate_iam_policies(calls, args.service_account, version=args.policy_kind, perm2role_service=perm2role_service)
+    policies = generate_iam_policies(
+        calls, 
+        args.service_account, 
+        version=args.policy_kind, 
+        perm2role_service=perm2role_service
+    )
 
     if args.json:
         print(json.dumps(policies, indent=2))
