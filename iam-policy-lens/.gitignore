@@ -1,0 +1,11 @@
+# OS files
+.DS_Store
+
+# Python virtual environment and cache
+.venv/
+__pycache__/
+*.pyc
+
+# Node modules and build output
+node_modules/
+dist/
