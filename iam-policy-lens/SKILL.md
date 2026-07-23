@@ -1,26 +1,26 @@
 ---
 name: iam-policy-lens
-description: Polyglot Cloud Access Scanner (Python, Go, & TypeScript) to statically identify Google Cloud (GAPIC) client library invocations, map them to required IAM permissions, and generate consolidated GCP IAM Policies. Use whenever the user asks to generate required policies, update or verify policies declared in Terraform configuration, etc. When using this skill, rely on the ability of the skill's scripts to identify permissions from code, do not analyze the code again unless the user explicitly asks for it. 
+description: Generates GCP IAM V1 and V3 Policies by scanning/statically analyzing Python, Go, and TypeScript codebases to find exact roles/permissions needed to run and detecting API client library usages. Use whenever the user asks to generate required policies, scan code, list required roles, generate/update policies declared in Terraform HCL configuration, or verify existing ones. When using this skill, rely on the ability of the skill's scripts to generate policies from code, do not analyze the source code again unless the user explicitly asks for it. Triggers on: scan code, list roles, 
+  find permissions, generate policy, audit access, Terraform, IAM.
 ---
 
-# IAM Policy Lens Instructions
-
-> [!IMPORTANT]
-> **Authority of Scanner**: Rely exclusively on the output of the skill's scripts (`analyzer.py`, `policy.py`) to determine required permissions and roles. **Do NOT manually browse or analyze the application code files** to verify, supplement, or re-do the analysis unless the user explicitly instructs you to perform a "manual review" or "check for blind spots". The skill is the authoritative source.
-
-Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) usage in Python, Go, or TypeScript projects to determine the exact IAM permissions, roles, or policies required by the codebase.
-
-
----
+# IAM Policy Lens
 
 ## When to Use
 
 - **GCP Code Audit**: Discover exactly what GCP services and methods a Python, Go, or TypeScript application invokes.
 - **IAM Permission Mapping**: Map high-level code invocations (e.g., `storage.buckets.create`) to granular IAM permissions before deploying or configuring Service Accounts.
-- **Automated Policy Generation**: Generate least-privilege, consolidated GCP IAM Policies (V1 or V3) tailored to the application's credential provenance (Service Accounts, Users, Impersonation).
+- **Automated Policy Generation**: Generate consolidated GCP IAM Policies (V1 or V3) tailored to the application's credential provenance (Service Accounts, Users, Impersonation).
 - **Security & Access Reviews**: Identify the exact security footprint and credential mechanisms used across the codebase.
 
----
+## Scanner Authority & Project Guidelines
+
+> [!IMPORTANT]
+> **Authority of Scanner**: Rely exclusively on the output of the skill's scripts (`analyzer.py`, `policy.py`) to extract required permissions and roles.
+> - **Do NOT manually browse or analyze application source code files** (e.g., Python, Go, TypeScript code files) to verify, extract, or re-do the API client library usage analysis or permissions/role identification.
+> - **DO read and respect project guidelines/instruction files** (such as a local `GEMINI.md` or files in `.agents/` / `.gemini/` directories) to align on target configuration rules, file placement conventions, and preferences.
+
+Use this skill when you need to audit, analyze, or map Google Cloud API (GAPIC) usage in Python, Go, or TypeScript projects to determine the exact IAM permissions, roles, or policies required by the codebase.
 
 ## Architecture & Workflow
 
@@ -28,53 +28,62 @@ The skill is split into a two-stage pipeline:
 1. **Analyzers (`scripts/python/analyzer.py`, `scripts/go/analyzer.go`, `scripts/ts/analyzer.ts`)**: Parse the target project AST/types, resolve fully qualified method names, extract credential provenance, and output structured JSON conforming to `schema.json`.
 2. **Policy Generator (`scripts/policy/policy.py`)**: Ingests the JSON call array from the analyzers (via `stdin`), maps methods to IAM permissions using `permissions.py`, resolves attachment points/principals, and outputs consolidated IAM Policies (V1 or V3).
 
+> [!WARNING]
+> **Output Volume & Stream Truncation**: Static analysis scans can generate hundreds of lines of structured JSON data across dozens of detected API usages. Running the analyzer directly to standard output in an agent shell will result in buffer truncation in execution logs. **Always redirect the JSON output to an intermediate scratch file** (e.g., `> /tmp/scratch/scan_results.json`) before reading or feeding it into the policy generator.
+> **Important**: Ensure that the target directory of the redirect exists (e.g., run `mkdir -p /tmp/scratch` or similar) before running the scan, otherwise shell redirection will fail. Always delete the `scan_results.json` file after the user prompt is answered.
+
 ---
 
-> [!WARNING]
-> **Output Volume & Stream Truncation**: Static analysis scans can generate hundreds of lines of structured JSON data across dozens of detected API usages. Running the analyzer directly to standard output in an agent shell will result in buffer truncation in execution logs. **Always redirect the JSON output to an intermediate scratch file** (e.g., `> /tmp/scan_results.json`) before reading or feeding it into the policy generator.
+## Pipeline Execution
 
-### 1. End-to-End Pipeline (Recommended for Small Outputs)
-Chain the analyzer and policy generator together using standard Unix streams (`stdin`/`stdout`).
+Always use this two-step process to run static analysis scans and generate policies. This avoids terminal buffer truncation issues in agent logs.
 
-#### For Python Projects:
+### Step 1: Run the language-specific analyzer and redirect output to a scratch file
+
+Ensure the target directory exists and save the scan output:
+
+- **For Python Projects**:
+  ```bash
+  mkdir -p /tmp/scratch && ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> <python_env_path> [--verbose] > /tmp/scratch/scan_results.json
+  ```
+  *(Note: `<python_env_path>` is the absolute path to the Python executable in the target project's virtual environment, e.g. `/path/to/project/.venv/bin/python`).*
+
+- **For Go Projects**:
+  ```bash
+  mkdir -p /tmp/scratch && (cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project> [--verbose]) > /tmp/scratch/scan_results.json
+  ```
+
+- **For TypeScript / Node.js Projects**:
+  ```bash
+  mkdir -p /tmp/scratch && node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> [--verbose] > /tmp/scratch/scan_results.json
+  ```
+
+### Step 2: Ingest the JSON and generate policies
+
+Run the policy generator tool using file redirection:
 ```bash
-~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <path_to_target_project> [python_env_path] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--least-privilege]
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scratch/scan_results.json [--policy-kind {v1,v3}] [--least-privilege] [--service-account=my-sa@project.iam.gserviceaccount.com]
 ```
 
-#### For Go Projects:
-```bash
-(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_path_to_target_project>) | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--least-privilege]
-```
-
-#### For TypeScript / Node.js Projects:
-```bash
-node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <path_to_target_project> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py [--service-account=my-sa@project.iam.gserviceaccount.com] [--json] [--policy-kind {v1,v3}] [--least-privilege]
-```
-
-### 2. Two-Step Execution (Recommended for Auditing & Large Datasets)
-Save the analyzer's structured JSON output to an intermediate file to avoid shell buffer truncation and enable compliance auditing or debugging against `schema.json`, then generate policies via file redirection:
-
-```bash
-# Step 1: Generate scan artifact in a scratch location
-(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go /path/to/project) > /tmp/scan_results.json
-
-# Step 2: Generate IAM policies from artifact
-~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py < /tmp/scan_results.json [--policy-kind {v1,v3}] [--least-privilege]
-```
-
-### 3. Policy Generation Options
-
-The `policy.py` script supports the following options:
-
+**Policy Generation Options:**
 - `--policy-kind {v1,v3}`: Specify the version of the policy to generate. Defaults to `v3`.
-- `--least-privilege`: (V1 only) Infer fine-grained least-privilege roles. By default (`least_privilege=false`), V1 policies map permissions to standard AEV (Admin, Editor, Viewer) roles.
+- `--least-privilege`: (V1 only) Infer fine-grained least-privilege roles. By default (`least_privilege=false`), V1 policies map permissions to standard AEV (Admin, Editor, Viewer) roles. Use this flag **ONLY** when the user explicitly asks for least-privilege roles, otherwise omit it.
 - `--dump-file`: Path to IAMDB JSON dump file (required for V1 policies, defaults to `iamdb_roles.json` in the same directory as `policy.py`).
 - `--service-account`: Default service account email to bind policies to.
 - `--json`: Output raw JSON array of generated policies.
 
+### Step 3: Cleanup
+Always delete the intermediate scan results file after your task is complete:
+```bash
+rm -f /tmp/scratch/scan_results.json
+```
+
+### Step 4: Response Generation
+When presenting IAM scan results and Terraform update summaries to the user, format the output using the template defined in [templates/scan_response.md](templates/scan_response.md).
+
 ---
 
-## Script Running
+## Script Running Details
 
 ### Python
 
@@ -86,8 +95,23 @@ The `policy.py` script supports the following options:
 When invoking this skill from an external workspace, agents should construct absolute paths to both the skill's virtual environment and the script files:
 ```bash
 # Python Project Analysis Pipeline
-~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <target_project_path> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py
+~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/python/analyzer.py <target_project_path> <python_env_path> [--verbose] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py
 ```
+
+#### Troubleshooting & Environment Setup
+- **Unresolved Python Types or Empty Scan Results (`[]` / `Any` / `[fallback]`)**:
+  If Jedi cannot find type definitions for external client libraries or the scan returns an empty list, you MUST provide the path to the target project's virtual environment as the second parameter to `analyzer.py`:
+  ```bash
+  ./.venv/bin/python3 scripts/python/analyzer.py /path/to/project /path/to/project/.venv/bin/python | ./.venv/bin/python3 scripts/policy/policy.py
+  ```
+
+- **Missing or Broken Python Virtual Environment**:
+  If the virtual environment at `~/.agents/skills/iam-policy-lens/.venv` is missing or missing dependencies (like `jedi`), re-initialize it:
+  ```bash
+  python3 -m venv ~/.agents/skills/iam-policy-lens/.venv
+  ~/.agents/skills/iam-policy-lens/.venv/bin/pip install -r ~/.agents/skills/iam-policy-lens/scripts/python/requirements.txt
+  ```
+
 
 ### Go
 
@@ -96,9 +120,14 @@ When invoking this skill from an external workspace, agents should construct abs
 - To cleanly satisfy both requirements without violating workspace restrictions, **always execute the Go analyzer inside a subshell** `(cd ... && go run ...)` that isolates module resolution across directory boundaries while keeping the primary tool working directory anchored in your workspace:
 
 ```bash
-# Executed from any workspace CWD
-(cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_target_project_path>) > /tmp/go_scan.json
+# Executed from any workspace CWD (ensuring output directory exists)
+mkdir -p /tmp/scratch && (cd ~/.agents/skills/iam-policy-lens/scripts/go && go run *.go <absolute_target_project_path> [--verbose]) > /tmp/scratch/go_scan.json
 ```
+
+#### Troubleshooting
+- **Go Package Compilation Warnings**:
+  The Go analyzer uses `golang.org/x/tools/go/packages` and will gracefully attempt to scan ASTs even if the target project has partial compilation errors.
+
 
 ### TypeScript
 
@@ -110,112 +139,5 @@ When invoking this skill from an external workspace, agents should construct abs
 When invoking this skill from an external workspace, agents should construct absolute paths to the compiled JavaScript analyzer and the Python virtual environment:
 ```bash
 # TypeScript Project Analysis Pipeline
-node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <target_project_path> | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py
+node ~/.agents/skills/iam-policy-lens/scripts/ts/dist/analyzer.js <target_project_path> [--verbose] | ~/.agents/skills/iam-policy-lens/.venv/bin/python3 ~/.agents/skills/iam-policy-lens/scripts/policy/policy.py
 ```
-
----
-
-## Analyzing Results
-
-### 1. Analyzer JSON Output (`schema.json`)
-The analyzer emits a clean JSON array of detected calls to `stdout` (while logging progress to `stderr`):
-
-```json
-[
-  {
-    "fullname": "google.cloud.asset_v1.AssetServiceClient.list_assets",
-    "file_path": "/path/to/tools/assets.py",
-    "line": 32,
-    "source_line": "for asset in client.list_assets(request=request):",
-    "resolution": "jedi",
-    "credentials": {
-      "source": "default/implicit",
-      "provenance": "IMPLICIT",
-      "identity": "APP"
-    }
-  }
-]
-```
-
-### 2. Generated IAM Policy Output
-
-The policy generator consolidates permissions by attachment point and principal. Depending on `--policy-kind`, the output format differs.
-
-#### V3 Policy Output (Default)
-
-```json
-====================================================
-🔒 Generated GCP IAM V3 Allow Policies
-====================================================
-
-📍 Attachment Point: projects/{project_id}
-{
-    "name": "policies/projects/{project_id}/allowpolicies/workload-policy",
-    "displayName": "Consolidated Workload Allow Policy",
-    "rules": [
-        {
-            "description": "Allow workload permissions for principal://iam.googleapis.com/projects/-/serviceAccounts/your-service-account@your-project.iam.gserviceaccount.com",
-            "allowRule": {
-                "allowPrincipals": [
-                    "principal://iam.googleapis.com/projects/-/serviceAccounts/your-service-account@your-project.iam.gserviceaccount.com"
-                ],
-                "allowPermissions": [
-                    "bigquery.jobs.create",
-                    "bigquery.tables.list",
-                    "cloudasset.assets.searchAllResources",
-                    "compute.instances.list",
-                    "container.clusters.list"
-                ]
-            }
-        }
-    ]
-}
-====================================================
-```
-
-#### V1 Policy Output
-
-```json
-====================================================
-🔒 Generated GCP IAM V1 Policies
-====================================================
-
-📍 Attachment Point: projects/{project_id}
-{
-    "bindings": [
-        {
-            "role": "roles/bigquery.dataQnaUser",
-            "members": [
-                "serviceAccount:your-service-account@your-project.iam.gserviceaccount.com"
-            ]
-        },
-        {
-            "role": "roles/compute.vmExtensionPolicyViewer",
-            "members": [
-                "serviceAccount:your-service-account@your-project.iam.gserviceaccount.com"
-            ]
-        }
-    ]
-}
-====================================================
-```
-
----
-
-## Troubleshooting & Fallbacks
-
-- **Unresolved Python Types (`Any` or `[fallback]`)**:
-  If Jedi cannot find type definitions for external client libraries, provide the path to the target project's virtual environment as the second parameter to `analyzer.py`:
-  ```bash
-  ./.venv/bin/python3 scripts/python/analyzer.py /path/to/project /path/to/project/.venv/bin/python | ./.venv/bin/python3 scripts/policy/policy.py
-  ```
-- **Go Package Compilation Warnings**:
-  The Go analyzer uses `golang.org/x/tools/go/packages` and will gracefully attempt to scan ASTs even if the target project has partial compilation errors.
-
-- **Missing or Broken Python Virtual Environment**:
-  If the virtual environment at `~/.agents/skills/iam-policy-lens/.venv` is missing or missing dependencies (like `jedi`), re-initialize it:
-  ```bash
-  python3 -m venv ~/.agents/skills/iam-policy-lens/.venv
-  ~/.agents/skills/iam-policy-lens/.venv/bin/pip install -r ~/.agents/skills/iam-policy-lens/scripts/python/requirements.txt
-  ```
-

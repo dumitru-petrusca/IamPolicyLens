@@ -57,7 +57,7 @@ def _scan_file_wrapper(file_path: str) -> List[GapicCall]:
     return scan_file(file_path, _worker_project, _worker_project.path, _worker_env)
 
 
-def find_gapic_calls(sources_path: str, python_env: str = None) -> List[GapicCall]:
+def find_gapic_calls(sources_path: str, python_env: str = None, verbose: bool = False) -> List[GapicCall]:
     """
     Analyzes a Python project using Jedi and returns a list of GapicCall objects.
     Uses multi-processing to parallelize the scan across multiple CPU cores.
@@ -90,9 +90,10 @@ def find_gapic_calls(sources_path: str, python_env: str = None) -> List[GapicCal
         completed = 0
         for future in concurrent.futures.as_completed(future_to_file):
             completed += 1
-            percentage = (completed / total_files) * 100
-            sys.stderr.write(f"\rAnalyzing file {completed}/{total_files} ({percentage:.1f}%) ...")
-            sys.stderr.flush()
+            if verbose:
+                percentage = (completed / total_files) * 100
+                sys.stderr.write(f"\rAnalyzing file {completed}/{total_files} ({percentage:.1f}%) ...")
+                sys.stderr.flush()
             
             try:
                 calls = future.result()
@@ -100,10 +101,12 @@ def find_gapic_calls(sources_path: str, python_env: str = None) -> List[GapicCal
                     all_calls.extend(calls)
             except Exception as e:
                 file_path = future_to_file[future]
-                print(f"\nError in worker scanning {file_path}: {e}", file=sys.stderr)
+                if verbose:
+                    print(f"\nError in worker scanning {file_path}: {e}", file=sys.stderr)
                 
-    sys.stderr.write("\n")
-    sys.stderr.flush()
+    if verbose:
+        sys.stderr.write("\n")
+        sys.stderr.flush()
     return all_calls
 
 

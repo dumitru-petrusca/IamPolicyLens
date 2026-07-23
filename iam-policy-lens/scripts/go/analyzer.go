@@ -36,13 +36,23 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	verbose := false
+	var filteredArgs []string
+	for _, arg := range os.Args[1:] {
+		if arg == "--verbose" || arg == "-v" {
+			verbose = true
+		} else {
+			filteredArgs = append(filteredArgs, arg)
+		}
+	}
+
+	if len(filteredArgs) < 1 {
 		fmt.Fprintln(os.Stderr, "Usage:")
-		fmt.Fprintln(os.Stderr, "  go run scripts/go/*.go <path_to_project>")
+		fmt.Fprintln(os.Stderr, "  go run scripts/go/*.go <path_to_project> [--verbose]")
 		os.Exit(1)
 	}
 
-	projectPath, err := filepath.Abs(os.Args[1])
+	projectPath, err := filepath.Abs(filteredArgs[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving project path: %v\n", err)
 		os.Exit(1)
@@ -52,7 +62,7 @@ func main() {
 
 	startTime := time.Now()
 
-	callsChan, err := ScanProject(projectPath)
+	callsChan, err := ScanProject(projectPath, verbose)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error scanning project: %v\n", err)
 		os.Exit(1)
@@ -71,7 +81,7 @@ func main() {
 		fmt.Println("[]")
 	}
 
-	fmt.Fprintf(os.Stderr, "\nScan completed in %.2f seconds.\n", elapsed.Seconds())
+	fmt.Fprintf(os.Stderr, "Scan completed in %.2f seconds.\n", elapsed.Seconds())
 	fmt.Fprintln(os.Stderr, "====================================================")
 }
 

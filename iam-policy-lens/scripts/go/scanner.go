@@ -33,7 +33,7 @@ func (c *fileCache) getLine(path string, lineNum int) string {
 	return ""
 }
 
-func ScanProject(projectPath string) (<-chan GapicCall, error) {
+func ScanProject(projectPath string, verbose bool) (<-chan GapicCall, error) {
 	// Set up packages config
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles |
@@ -52,7 +52,9 @@ func ScanProject(projectPath string) (<-chan GapicCall, error) {
 			if len(pkg.Errors) > 0 {
 				// Continue scanning despite package compilation errors in target project
 				for _, err := range pkg.Errors {
-					fmt.Fprintf(os.Stderr, "Package load warning: %v\n", err)
+					if verbose {
+						fmt.Fprintf(os.Stderr, "Package load warning: %v\n", err)
+					}
 				}
 			}
 			for _, fileNode := range pkg.Syntax {

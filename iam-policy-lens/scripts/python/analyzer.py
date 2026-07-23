@@ -29,13 +29,17 @@ from dataclasses import asdict
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage:", file=sys.stderr)
-        print("  python scripts/python/analyzer.py <path_to_project> [python_env_path]", file=sys.stderr)
-        sys.exit(1)
-        
-    project_path = sys.argv[1]
-    python_env = sys.argv[2] if len(sys.argv) >= 3 else None
+    import argparse
+    parser = argparse.ArgumentParser(description="Python Cloud Access Scanner")
+    parser.add_argument("project_path", help="Path to target project")
+    parser.add_argument("python_env", nargs="?", default=None, help="Path to python executable of target project virtualenv")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Display progress and scan details")
+    
+    args = parser.parse_args()
+    
+    project_path = args.project_path
+    python_env = args.python_env
+    verbose = args.verbose
     
     print(f"Scanning: {project_path} for GAPIC calls", file=sys.stderr)
     if python_env:
@@ -43,7 +47,7 @@ if __name__ == "__main__":
         
     start_time = time.time()
     import scanner
-    raw_calls = scanner.find_gapic_calls(project_path, python_env)
+    raw_calls = scanner.find_gapic_calls(project_path, python_env, verbose=verbose)
     elapsed_time = time.time() - start_time
     
     if raw_calls:
@@ -64,5 +68,5 @@ if __name__ == "__main__":
     else:
         print("[]")
         
-    print(f"\nScan completed in {elapsed_time:.2f} seconds.", file=sys.stderr)
+    print(f"Scan completed in {elapsed_time:.2f} seconds.", file=sys.stderr)
     print("====================================================", file=sys.stderr)

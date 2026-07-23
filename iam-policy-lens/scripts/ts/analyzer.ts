@@ -32,13 +32,16 @@ import { scanProject } from "./scanner.js";
 
 function main() {
   const args = process.argv.slice(2);
-  if (args.length < 1) {
+  const verbose = args.includes("--verbose") || args.includes("-v");
+  const filteredArgs = args.filter(a => a !== "--verbose" && a !== "-v");
+
+  if (filteredArgs.length < 1) {
     console.error("Usage:");
-    console.error("  node scripts/ts/dist/analyzer.js <path_to_project>");
+    console.error("  node scripts/ts/dist/analyzer.js <path_to_project> [--verbose]");
     process.exit(1);
   }
 
-  const projectPath = path.resolve(args[0]);
+  const projectPath = path.resolve(filteredArgs[0]);
   console.error(`Scanning: ${projectPath} for TypeScript/Node.js GAPIC calls`);
 
   const startTime = Date.now();
@@ -58,7 +61,7 @@ function main() {
     console.log("[]");
   }
 
-  console.error(`\nScan completed in ${elapsed.toFixed(2)} seconds.`);
+  console.error(`Scan completed in ${elapsed.toFixed(2)} seconds.`);
   console.error("====================================================");
 }
 
